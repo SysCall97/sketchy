@@ -3,6 +3,8 @@ import SwiftUI
 /// Paywall screen for subscription upgrade
 struct PaywallView: View {
     @Binding var isPresented: Bool
+    let subscriptionManager: SubscriptionManager
+    let productID: String
 
     var body: some View {
         NavigationView {
@@ -58,9 +60,24 @@ struct PaywallView: View {
                     }
                     .padding(.horizontal)
 
+                    // Loader overlay
+                    if subscriptionManager.loaderStatus != .none && subscriptionManager.loaderStatus != .dismiss {
+                        VStack(spacing: 12) {
+                            ProgressView()
+                                .progressViewStyle(CircularProgressViewStyle())
+
+                            Text(subscriptionManager.loaderStatus.status)
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                        }
+                        .padding()
+                        .background(Color(.systemBackground))
+                        .cornerRadius(8)
+                        .shadow(radius: 4)
+                    }
+
                     // Primary CTA Button
                     Button(action: {
-                        // TODO: Handle subscription purchase
                         handleSubscribe()
                     }) {
                         Text("Start $0.99 Week")
@@ -68,14 +85,14 @@ struct PaywallView: View {
                             .foregroundColor(.white)
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 14)
-                            .background(Color.blue)
+                            .background(subscriptionManager.loaderStatus == .none ? Color.blue : Color.gray)
                             .cornerRadius(12)
                     }
                     .padding(.horizontal)
+                    .disabled(subscriptionManager.loaderStatus != .none && subscriptionManager.loaderStatus != .dismiss)
 
                     // Restore Purchases Button
                     Button(action: {
-                        // TODO: Handle restore purchases
                         handleRestore()
                     }) {
                         Text("Restore Purchases")
@@ -119,13 +136,11 @@ struct PaywallView: View {
     }
 
     private func handleSubscribe() {
-        // TODO: Integrate with StoreKit 2 for subscription purchase
-        print("Subscribe button tapped")
+        subscriptionManager.purchaseRequest(productID: productID)
     }
 
     private func handleRestore() {
-        // TODO: Integrate with StoreKit 2 for restore purchases
-        print("Restore purchases button tapped")
+        subscriptionManager.restorePurchase()
     }
 }
 
@@ -148,5 +163,9 @@ struct BenefitRow: View {
 }
 
 #Preview {
-    PaywallView(isPresented: .constant(true))
+    PaywallView(
+        isPresented: .constant(true),
+        subscriptionManager: SubscriptionManager(),
+        productID: "com.sketchy.subscription.weekly"
+    )
 }

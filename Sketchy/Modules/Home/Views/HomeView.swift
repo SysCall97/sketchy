@@ -21,7 +21,7 @@ struct HomeView: View {
                                 .font(.subheadline)
                                 .foregroundColor(.secondary)
                         }
-                        .padding(.top, DailyLimitManager.shared.shouldShowDailyLimitIndicator() ? 100 : 20)
+                        .padding(.top, shouldShowIndicator() ? 100 : 20)
 
                         // Template Gallery
                         LazyVGrid(columns: [
@@ -45,24 +45,23 @@ struct HomeView: View {
                 .navigationBarTitleDisplayMode(.large)
 
                 // Floating Daily Limit Indicator - positioned under nav bar
-                if DailyLimitManager.shared.shouldShowDailyLimitIndicator() {
-                    VStack {
-                        Spacer()
-                            .frame(height: 10) // Account for navigation bar
+                VStack {
+                    Spacer()
+                        .frame(height: 10) // Account for navigation bar
 
-                        DailyLimitIndicator(
-                            limitManager: DailyLimitManager.shared,
-                            onTapUpgrade: {
-                                isPaywallPresented = true
-                            }
-                        )
-                        .padding(.horizontal)
-                        .padding(.top, 8)
-                        .padding(.bottom, 4)
-                        .background(.clear)
+                    DailyLimitIndicator(
+                        limitManager: DailyLimitManager.shared,
+                        subscriptionManager: coordinator.subscriptionManager,
+                        onTapUpgrade: {
+                            isPaywallPresented = true
+                        }
+                    )
+                    .padding(.horizontal)
+                    .padding(.top, 8)
+                    .padding(.bottom, 4)
+                    .background(.clear)
 
-                        Spacer()
-                    }
+                    Spacer()
                 }
 
                 // Floating Import from Photos button
@@ -103,8 +102,20 @@ struct HomeView: View {
             }
         }
         .sheet(isPresented: $isPaywallPresented) {
-            PaywallView(isPresented: $isPaywallPresented)
+            PaywallView(
+                isPresented: $isPaywallPresented,
+                subscriptionManager: coordinator.subscriptionManager,
+                productID: "com.sketchy.subscription.weekly"
+            )
         }
+    }
+
+    // MARK: - Helper Methods
+
+    private func shouldShowIndicator() -> Bool {
+        let isSubscribed = coordinator.subscriptionManager.isSubscribedOrUnlockedAll()
+        let shouldShowDailyLimit = DailyLimitManager.shared.shouldShowDailyLimitIndicator()
+        return !isSubscribed && shouldShowDailyLimit
     }
 }
 

@@ -6,6 +6,10 @@ import Combine
 class AppCoordinator: Coordinatable {
     @Published var currentRoute: CoordinatorRoute = .home
 
+    // MARK: - Services
+
+    let subscriptionManager = SubscriptionManager()
+
     var rootView: AnyView {
         switch currentRoute {
         case .home:
@@ -57,7 +61,16 @@ class AppCoordinator: Coordinatable {
     }
 
     private func setupServices() {
-        // TODO: Initialize services like AutoLockService
-        // This will be implemented when services are created
+        // Initialize SubscriptionManager with product IDs
+        // TODO: Add your product IDs from App Store Connect
+        let productIds = [
+            "com.sketchy.subscription.weekly"
+        ]
+        let subscriptionGroupId = "21338383" // TODO: Add your subscription group ID from App Store Connect
+
+        subscriptionManager.initWithProductIDS(
+            productIds: productIds,
+            subscriptionGroupId: subscriptionGroupId
+        )
     }
 }
