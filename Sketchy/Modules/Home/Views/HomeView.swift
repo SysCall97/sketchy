@@ -12,7 +12,7 @@ struct HomeView: View {
     var body: some View {
         NavigationView {
             ZStack {
-                ScrollView {
+                ScrollView(showsIndicators: false) {
                     VStack(spacing: 30) {
                         // Header
                         VStack(spacing: 8) {
@@ -21,7 +21,7 @@ struct HomeView: View {
                                 .font(.subheadline)
                                 .foregroundColor(.secondary)
                         }
-                        .padding(.top, 20)
+                        .padding(.top, 100)
 
                         // Template Gallery
                         LazyVGrid(columns: [
@@ -38,22 +38,29 @@ struct HomeView: View {
                         .padding()
 
                         Spacer()
-                            .frame(height: 80)
+                            .frame(height: 100)
                     }
                 }
                 .navigationTitle("Sketchy")
                 .navigationBarTitleDisplayMode(.large)
-                .toolbar {
-                    ToolbarItem(placement: .navigationBarTrailing) {
-                        Button(action: {
+
+                // Floating Daily Limit Indicator - positioned under nav bar
+                VStack {
+                    Spacer()
+                        .frame(height: 10) // Account for navigation bar
+
+                    DailyLimitIndicator(
+                        limitManager: DailyLimitManager.shared,
+                        onTapUpgrade: {
                             isPaywallPresented = true
-                        }) {
-                            HStack(spacing: 4) {
-                                Image(systemName: "crown.fill")
-                                    .foregroundColor(.yellow)
-                            }
                         }
-                    }
+                    )
+                    .padding(.horizontal)
+                    .padding(.top, 8)
+                    .padding(.bottom, 4)
+                    .background(.clear)
+
+                    Spacer()
                 }
 
                 // Floating Import from Photos button
@@ -125,7 +132,7 @@ struct CachedAsyncImage: View {
 
         ZStack {
             RoundedRectangle(cornerRadius: 12)
-                .fill(Color.gray.opacity(0.2))
+                .fill(Color.clear)
 
             if let image = displayImage {
                 Image(uiImage: image)
@@ -141,7 +148,7 @@ struct CachedAsyncImage: View {
                 // Placeholder
                 Image(systemName: "photo")
                     .font(.largeTitle)
-                    .foregroundColor(.gray)
+                    .foregroundColor(.clear)
             }
         }
         .frame(height: containerHeight)

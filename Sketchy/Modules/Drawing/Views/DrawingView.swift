@@ -164,6 +164,9 @@ struct DrawingView: View {
             isUIVisible.toggle()
         }
         .task {
+            // Record the drawing session (uses daily free drawing)
+            DailyLimitManager.shared.recordDrawingSession()
+
             // Request camera authorization first
             let authorized = await cameraService.requestAuthorization()
 
