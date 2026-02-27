@@ -104,6 +104,18 @@ struct RootView: View {
     @ObservedObject var coordinator: AppCoordinator
 
     var body: some View {
-        coordinator.rootView
+        NavigationStack(path: $coordinator.navigationPath) {
+            coordinator.rootView
+                .navigationDestination(for: CoordinatorRoute.self) { route in
+                    switch route {
+                    case .home:
+                        HomeView(coordinator: coordinator)
+                    case .drawing(let template):
+                        DrawingView(coordinator: coordinator, template: template)
+                    case .templateGallery:
+                        TemplateGalleryView(coordinator: coordinator)
+                    }
+                }
+        }
     }
 }

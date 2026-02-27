@@ -14,8 +14,7 @@ struct HomeView: View {
     @State private var pendingImage: UIImage?
 
     var body: some View {
-        NavigationView {
-            ZStack {
+        ZStack {
                 ScrollView(showsIndicators: false) {
                     VStack(spacing: 30) {
                         // Header
@@ -45,8 +44,6 @@ struct HomeView: View {
                             .frame(height: 100)
                     }
                 }
-                .navigationTitle("Sketchy")
-                .navigationBarTitleDisplayMode(.large)
 
                 // Floating Daily Limit Indicator - positioned under nav bar
                 VStack {
@@ -90,8 +87,9 @@ struct HomeView: View {
                     .padding(.horizontal, 20)
                     .padding(.bottom, 20)
                 }
-            }
         }
+        .navigationTitle("Sketchy")
+        .navigationBarTitleDisplayMode(.large)
         .sheet(isPresented: $isPhotoPickerPresented) {
             PhotoPickerView(selectedImage: $selectedImage, isPresented: $isPhotoPickerPresented)
         }

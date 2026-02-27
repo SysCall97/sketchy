@@ -9,9 +9,8 @@ struct TemplateGalleryView: View {
     @State private var importedTemplates: [TemplateModel] = []
 
     var body: some View {
-        NavigationView {
-            ScrollView {
-                VStack(spacing: 30) {
+        ScrollView {
+            VStack(spacing: 30) {
                     // Import button
                     Button(action: {
                         checkPermissionAndShowPicker()
@@ -71,10 +70,9 @@ struct TemplateGalleryView: View {
                     Spacer()
                 }
                 .padding(.top)
-            }
-            .navigationTitle("Templates")
-            .navigationBarTitleDisplayMode(.inline)
         }
+        .navigationTitle("Templates")
+        .navigationBarTitleDisplayMode(.inline)
         .sheet(isPresented: $showPhotoPicker) {
             PhotoPickerView(
                 selectedImage: $selectedImage,

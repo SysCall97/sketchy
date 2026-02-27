@@ -10,7 +10,7 @@ protocol Coordinatable: ObservableObject {
 }
 
 /// Navigation routes available in the app
-enum CoordinatorRoute {
+enum CoordinatorRoute: Hashable {
     case home
     case drawing(template: TemplateModel)
     case templateGallery

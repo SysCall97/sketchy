@@ -7,7 +7,7 @@ struct PaywallView: View {
     let productID: String
 
     var body: some View {
-        NavigationView {
+        NavigationStack {
             ScrollView(showsIndicators: false) {
                 VStack(spacing: 20) {
                     // App Icon & Name

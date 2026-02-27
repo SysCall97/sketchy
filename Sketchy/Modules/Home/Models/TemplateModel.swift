@@ -2,12 +2,12 @@ import UIKit
 import Foundation
 
 /// Represents a drawing template that can be traced
-struct TemplateModel: Identifiable, Equatable {
+struct TemplateModel: Identifiable, Equatable, Hashable {
     let id: UUID
     let name: String
     let source: TemplateSource
 
-    enum TemplateSource: Equatable {
+    enum TemplateSource: Equatable, Hashable {
         case bundled(String)      // Asset name in bundle
         case remote(String)       // URL string for remote image
         case imported(Data)       // Image data from user import

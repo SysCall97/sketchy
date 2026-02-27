@@ -4,33 +4,27 @@ import Combine
 /// Root coordinator that manages app-wide navigation and flow
 @MainActor
 class AppCoordinator: Coordinatable {
-    @Published var currentRoute: CoordinatorRoute = .home
+    // Navigation path for proper push/pop animations
+    @Published var navigationPath = NavigationPath()
 
     // MARK: - Services
 
     let subscriptionManager = SubscriptionManager()
 
     var rootView: AnyView {
-        switch currentRoute {
-        case .home:
-            return AnyView(HomeView(coordinator: self))
-        case .drawing(let template):
-            return AnyView(DrawingView(coordinator: self, template: template))
-        case .templateGallery:
-            return AnyView(TemplateGalleryView(coordinator: self))
-        }
+        AnyView(HomeView(coordinator: self))
     }
 
     // MARK: - Navigation
 
     /// Navigate to a specific route
     func navigate(to route: CoordinatorRoute) {
-        currentRoute = route
+        navigationPath.append(route)
     }
 
     /// Navigate to home screen
     func goToHome() {
-        navigate(to: .home)
+        navigationPath.removeLast(navigationPath.count)
     }
 
     /// Navigate to drawing screen with a template
@@ -45,11 +39,8 @@ class AppCoordinator: Coordinatable {
 
     /// Go back to previous screen
     func goBack() {
-        switch currentRoute {
-        case .drawing, .templateGallery:
-            goToHome()
-        case .home:
-            break  // Already at home
+        if !navigationPath.isEmpty {
+            navigationPath.removeLast()
         }
     }
 
