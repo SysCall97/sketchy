@@ -9,6 +9,10 @@ struct HomeView: View {
     @State private var selectedImage: UIImage?
     @State private var isPaywallPresented = false
 
+    // Paywall flow state
+    @State private var pendingTemplate: TemplateModel?
+    @State private var pendingImage: UIImage?
+
     var body: some View {
         NavigationView {
             ZStack {
@@ -31,7 +35,7 @@ struct HomeView: View {
                             ForEach(templates) { template in
                                 TemplateThumbnail(template: template)
                                     .onTapGesture {
-                                        coordinator.goToDrawing(with: template)
+                                        handleTemplateSelection(template)
                                     }
                             }
                         }
@@ -93,12 +97,20 @@ struct HomeView: View {
         }
         .onChange(of: selectedImage) { newImage in
             if let image = newImage {
-                // Create a template from the selected image
-                if let imageData = image.jpegData(compressionQuality: 0.9) {
-                    let template = TemplateModel(name: "Photo", imageData: imageData)
-                    coordinator.goToDrawing(with: template)
+                // Store pending image and check if we can start drawing
+                pendingImage = image
+
+                if canStartDrawing() {
+                    // Create a template from the selected image and proceed
+                    if let imageData = image.jpegData(compressionQuality: 0.9) {
+                        let template = TemplateModel(name: "Photo", imageData: imageData)
+                        pendingImage = nil
+                        coordinator.goToDrawing(with: template)
+                    }
+                } else {
+                    // Show paywall
+                    isPaywallPresented = true
                 }
-                selectedImage = nil
             }
         }
         .sheet(isPresented: $isPaywallPresented) {
@@ -108,6 +120,12 @@ struct HomeView: View {
                 productID: "com.sketchy.subscription.weekly"
             )
         }
+        .onChange(of: isPaywallPresented) { isPresented in
+            // When paywall dismisses, check if user subscribed
+            if !isPresented {
+                handlePaywallDismissal()
+            }
+        }
     }
 
     // MARK: - Helper Methods
@@ -116,6 +134,45 @@ struct HomeView: View {
         let isSubscribed = coordinator.subscriptionManager.isSubscribedOrUnlockedAll()
         let shouldShowDailyLimit = DailyLimitManager.shared.shouldShowDailyLimitIndicator()
         return !isSubscribed && shouldShowDailyLimit
+    }
+
+    private func canStartDrawing() -> Bool {
+        let isSubscribed = coordinator.subscriptionManager.isSubscribedOrUnlockedAll()
+        return isSubscribed || DailyLimitManager.shared.canStartDrawing()
+    }
+
+    private func handleTemplateSelection(_ template: TemplateModel) {
+        if canStartDrawing() {
+            // User can draw, proceed directly
+            coordinator.goToDrawing(with: template)
+        } else {
+            // Limit reached, show paywall
+            pendingTemplate = template
+            isPaywallPresented = true
+        }
+    }
+
+    private func handlePaywallDismissal() {
+        // Check if user subscribed after paywall
+        if coordinator.subscriptionManager.isSubscribedOrUnlockedAll() {
+            // Wait for paywall dismissal animation to complete, then proceed with pending drawing
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
+                if let template = pendingTemplate {
+                    pendingTemplate = nil
+                    coordinator.goToDrawing(with: template)
+                } else if let image = pendingImage {
+                    if let imageData = image.jpegData(compressionQuality: 0.9) {
+                        let template = TemplateModel(name: "Photo", imageData: imageData)
+                        pendingImage = nil
+                        coordinator.goToDrawing(with: template)
+                    }
+                }
+            }
+        } else {
+            // User didn't subscribe, clear pending state
+            pendingTemplate = nil
+            pendingImage = nil
+        }
     }
 }
 
