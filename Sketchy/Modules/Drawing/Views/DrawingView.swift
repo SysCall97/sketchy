@@ -19,62 +19,103 @@ struct DrawingView: View {
 
     var body: some View {
         ZStack {
-            // Layer 1: Camera or white background
-            if viewModel.state.mode == .abovePaper {
-                CameraView(cameraService: cameraService)
-                    .ignoresSafeArea()
-            } else {
-                Color.white
-                    .ignoresSafeArea()
+            // Layer 1: Camera or white background (with transforms)
+            GeometryReader { geometry in
+                if viewModel.state.mode == .abovePaper {
+                    CameraView(cameraService: cameraService)
+                        .scaleEffect(viewModel.state.cameraTransform.scale)
+                        .offset(
+                            x: viewModel.state.cameraTransform.translation.x,
+                            y: viewModel.state.cameraTransform.translation.y
+                        )
+                        .position(x: geometry.size.width / 2, y: geometry.size.height / 2)
+                } else {
+                    Color.white
+                        .ignoresSafeArea()
+                }
             }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .gesture(
+                DragGesture()
+                    .onChanged { value in
+                        if !viewModel.state.isTransformLocked &&
+                           viewModel.state.transformTarget == .camera &&
+                           viewModel.state.mode == .abovePaper {
+                            let newTransform = gestureHandler.handleDrag(value, current: viewModel.state.cameraTransform)
+                            viewModel.updateCameraTransform(newTransform)
+                        }
+                    }
+                    .onEnded { _ in
+                        gestureHandler.handleDragEnded()
+                    }
+            )
+            .simultaneousGesture(
+                MagnificationGesture()
+                    .onChanged { value in
+                        if !viewModel.state.isTransformLocked &&
+                           viewModel.state.transformTarget == .camera &&
+                           viewModel.state.mode == .abovePaper {
+                            let newTransform = gestureHandler.handlePinch(value, current: viewModel.state.cameraTransform)
+                            viewModel.updateCameraTransform(newTransform)
+                        }
+                    }
+                    .onEnded { _ in
+                        gestureHandler.handlePinchEnded()
+                    }
+            )
 
             // Layer 2: Template image with bounding box overlay
             if let image = viewModel.templateImage {
-                Image(uiImage: image)
-                    .resizable()
-                    .aspectRatio(contentMode: .fit)
-                    .opacity(viewModel.state.opacity)
-                    .overlay(
-                        // Bounding box overlay (if unlocked and active)
-                        Group {
+                GeometryReader { geometry in
+                    Image(uiImage: image)
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                        .opacity(viewModel.state.opacity)
+                        .overlay(
+                            // Bounding box overlay (if unlocked and active)
+                            Group {
+                                if !viewModel.state.isTransformLocked &&
+                                   viewModel.state.transformTarget == .template {
+                                    Rectangle()
+                                        .stroke(Color.white.opacity(0.8), lineWidth: 2)
+                                }
+                            }
+                        )
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        .scaleEffect(viewModel.state.templateTransform.scale)
+                        .offset(
+                            x: viewModel.state.templateTransform.translation.x,
+                            y: viewModel.state.templateTransform.translation.y
+                        )
+                        .position(x: geometry.size.width / 2, y: geometry.size.height / 2)
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .gesture(
+                    DragGesture()
+                        .onChanged { value in
                             if !viewModel.state.isTransformLocked &&
                                viewModel.state.transformTarget == .template {
-                                Rectangle()
-                                    .stroke(Color.white.opacity(0.8), lineWidth: 2)
+                                let newTransform = gestureHandler.handleDrag(value, current: viewModel.state.templateTransform)
+                                viewModel.updateTemplateTransform(newTransform)
                             }
                         }
-                    )
-                    .scaleEffect(viewModel.state.templateTransform.scale)
-                    .offset(
-                        x: viewModel.state.templateTransform.translation.x,
-                        y: viewModel.state.templateTransform.translation.y
-                    )
-                    .gesture(
-                        DragGesture()
-                            .onChanged { value in
-                                if !viewModel.state.isTransformLocked &&
-                                   viewModel.state.transformTarget == .template {
-                                    let newTransform = gestureHandler.handleDrag(value, current: viewModel.state.templateTransform)
-                                    viewModel.updateTemplateTransform(newTransform)
-                                }
+                        .onEnded { _ in
+                            gestureHandler.handleDragEnded()
+                        }
+                )
+                .simultaneousGesture(
+                    MagnificationGesture()
+                        .onChanged { value in
+                            if !viewModel.state.isTransformLocked &&
+                               viewModel.state.transformTarget == .template {
+                                let newTransform = gestureHandler.handlePinch(value, current: viewModel.state.templateTransform)
+                                viewModel.updateTemplateTransform(newTransform)
                             }
-                            .onEnded { _ in
-                                gestureHandler.handleDragEnded()
-                            }
-                    )
-                    .gesture(
-                        MagnificationGesture()
-                            .onChanged { value in
-                                if !viewModel.state.isTransformLocked &&
-                                   viewModel.state.transformTarget == .template {
-                                    let newTransform = gestureHandler.handlePinch(value, current: viewModel.state.templateTransform)
-                                    viewModel.updateTemplateTransform(newTransform)
-                                }
-                            }
-                            .onEnded { _ in
-                                gestureHandler.handlePinchEnded()
-                            }
-                    )
+                        }
+                        .onEnded { _ in
+                            gestureHandler.handlePinchEnded()
+                        }
+                )
             }
 
             // Layer 4: UI Controls
