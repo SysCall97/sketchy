@@ -54,10 +54,11 @@ struct TemplateModel: Identifiable, Equatable {
 extension TemplateModel {
     /// Built-in templates included with the app
     static let bundledTemplates: [TemplateModel] = [
-        TemplateModel(name: "Circle", bundledAssetName: "template_circle"),
-        TemplateModel(name: "Square", bundledAssetName: "template_square"),
-        TemplateModel(name: "Star", bundledAssetName: "template_star"),
-        TemplateModel(name: "Triangle", bundledAssetName: "template_triangle"),
-        TemplateModel(name: "Heart", bundledAssetName: "template_heart")
+        TemplateModel(name: "Alpaca", bundledAssetName: "alpaca"),
+        TemplateModel(name: "Bird", bundledAssetName: "bird"),
+        TemplateModel(name: "Bunny", bundledAssetName: "bunny"),
+        TemplateModel(name: "Cat", bundledAssetName: "cat"),
+        TemplateModel(name: "Sword", bundledAssetName: "sword"),
+        TemplateModel(name: "Fox", bundledAssetName: "fox")
     ]
 }

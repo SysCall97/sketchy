@@ -7,35 +7,46 @@ struct HomeView: View {
 
     var body: some View {
         NavigationView {
-            ScrollView {
-                VStack(spacing: 30) {
-                    // Header
-                    VStack(spacing: 8) {
-                        Text("Sketchy")
-                            .font(.largeTitle)
-                            .fontWeight(.bold)
+            ZStack {
+                ScrollView {
+                    VStack(spacing: 30) {
+                        // Header
+                        VStack(spacing: 8) {
+                            Text("Sketchy")
+                                .font(.largeTitle)
+                                .fontWeight(.bold)
 
-                        Text("Select a template to start drawing")
-                            .font(.subheadline)
-                            .foregroundColor(.secondary)
-                    }
-                    .padding(.top, 20)
-
-                    // Template Gallery
-                    LazyVGrid(columns: [
-                        GridItem(.flexible()),
-                        GridItem(.flexible())
-                    ], spacing: 20) {
-                        ForEach(templates) { template in
-                            TemplateThumbnail(template: template)
-                                .onTapGesture {
-                                    coordinator.goToDrawing(with: template)
-                                }
+                            Text("Select a template to start drawing")
+                                .font(.subheadline)
+                                .foregroundColor(.secondary)
                         }
-                    }
-                    .padding()
+                        .padding(.top, 20)
 
-                    // Import from Photos button
+                        // Template Gallery
+                        LazyVGrid(columns: [
+                            GridItem(.flexible()),
+                            GridItem(.flexible())
+                        ], spacing: 20) {
+                            ForEach(templates) { template in
+                                TemplateThumbnail(template: template)
+                                    .onTapGesture {
+                                        coordinator.goToDrawing(with: template)
+                                    }
+                            }
+                        }
+                        .padding()
+
+                        Spacer()
+                            .frame(height: 80)
+                    }
+                }
+                .navigationTitle("Sketchy")
+                .navigationBarTitleDisplayMode(.inline)
+
+                // Floating Import from Photos button
+                VStack {
+                    Spacer()
+
                     Button(action: {
                         coordinator.goToTemplateGallery()
                     }) {
@@ -49,14 +60,12 @@ struct HomeView: View {
                         .frame(maxWidth: .infinity)
                         .background(Color.blue)
                         .cornerRadius(12)
+                        .shadow(radius: 4)
                     }
-                    .padding(.horizontal)
-
-                    Spacer()
+                    .padding(.horizontal, 20)
+                    .padding(.bottom, 20)
                 }
             }
-            .navigationTitle("Sketchy")
-            .navigationBarTitleDisplayMode(.inline)
         }
     }
 }
