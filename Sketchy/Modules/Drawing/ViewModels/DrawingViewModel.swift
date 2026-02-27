@@ -148,6 +148,15 @@ class DrawingViewModel: ObservableObject, CameraServiceDelegate {
         state = state.with(isTransformLocked: !state.isTransformLocked)
     }
 
+    func resetCurrentTransform() {
+        switch state.transformTarget {
+        case .template:
+            state = state.with(templateTransform: .identity)
+        case .camera:
+            state = state.with(cameraTransform: .identity)
+        }
+    }
+
     // MARK: - Opacity & Brightness
 
     func setOpacity(_ opacity: Double) {

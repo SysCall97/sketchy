@@ -16,6 +16,9 @@ struct ControlPanelView: View {
                     },
                     onLockToggle: {
                         viewModel.toggleTransformLock()
+                    },
+                    onReset: {
+                        viewModel.resetCurrentTransform()
                     }
                 )
             }
@@ -118,6 +121,7 @@ struct TransformModePicker: View {
     let locked: Bool
     let onTargetChange: (DrawingState.TransformTarget) -> Void
     let onLockToggle: () -> Void
+    let onReset: () -> Void
 
     var body: some View {
         HStack(spacing: 12) {
@@ -152,6 +156,16 @@ struct TransformModePicker: View {
                 Image(systemName: locked ? "lock.fill" : "lock.open.fill")
                     .font(.title3)
                     .foregroundColor(locked ? .red : .white)
+                    .frame(width: 44, height: 44)
+                    .background(Color.black.opacity(0.5))
+                    .cornerRadius(22)
+            }
+
+            // Reset button
+            Button(action: onReset) {
+                Image(systemName: "arrow.counterclockwise")
+                    .font(.title3)
+                    .foregroundColor(.white)
                     .frame(width: 44, height: 44)
                     .background(Color.black.opacity(0.5))
                     .cornerRadius(22)
