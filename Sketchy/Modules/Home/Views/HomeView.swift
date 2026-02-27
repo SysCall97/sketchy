@@ -5,6 +5,8 @@ import Combine
 struct HomeView: View {
     @ObservedObject var coordinator: AppCoordinator
     @State private var templates = TemplateModel.bundledTemplates
+    @State private var isPhotoPickerPresented = false
+    @State private var selectedImage: UIImage?
 
     var body: some View {
         NavigationView {
@@ -49,7 +51,7 @@ struct HomeView: View {
                     Spacer()
 
                     Button(action: {
-                        coordinator.goToTemplateGallery()
+                        isPhotoPickerPresented = true
                     }) {
                         HStack {
                             Image(systemName: "photo.on.rectangle.angled")
@@ -66,6 +68,19 @@ struct HomeView: View {
                     .padding(.horizontal, 20)
                     .padding(.bottom, 20)
                 }
+            }
+        }
+        .sheet(isPresented: $isPhotoPickerPresented) {
+            PhotoPickerView(selectedImage: $selectedImage, isPresented: $isPhotoPickerPresented)
+        }
+        .onChange(of: selectedImage) { newImage in
+            if let image = newImage {
+                // Create a template from the selected image
+                if let imageData = image.jpegData(compressionQuality: 0.9) {
+                    let template = TemplateModel(name: "Photo", imageData: imageData)
+                    coordinator.goToDrawing(with: template)
+                }
+                selectedImage = nil
             }
         }
     }
