@@ -9,6 +9,7 @@ struct DrawingView: View {
     @StateObject private var viewModel: DrawingViewModel
     @StateObject private var cameraService: CameraService
     @State private var gestureHandler = TransformGestureHandler()
+    @State private var isUIVisible = true
 
     init(coordinator: AppCoordinator, template: TemplateModel) {
         self.coordinator = coordinator
@@ -144,16 +145,24 @@ struct DrawingView: View {
                     )
                 }
                 .padding()
+                .offset(y: isUIVisible ? 0 : -150)
+                .animation(.easeInOut(duration: 0.3), value: isUIVisible)
 
                 Spacer()
 
                 // Bottom: Control panel
                 ControlPanelView(viewModel: viewModel)
                 .padding()
+                .offset(y: isUIVisible ? 0 : 500)
+                .animation(.easeInOut(duration: 0.3), value: isUIVisible)
             }
         }
         .navigationBarHidden(true)
         .statusBar(hidden: true)
+        .onTapGesture {
+            // Toggle UI visibility on tap
+            isUIVisible.toggle()
+        }
         .task {
             // Request camera authorization first
             let authorized = await cameraService.requestAuthorization()
