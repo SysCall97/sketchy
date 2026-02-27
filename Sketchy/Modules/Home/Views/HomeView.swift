@@ -7,6 +7,7 @@ struct HomeView: View {
     @State private var templates = TemplateModel.bundledTemplates
     @State private var isPhotoPickerPresented = false
     @State private var selectedImage: UIImage?
+    @State private var isPaywallPresented = false
 
     var body: some View {
         NavigationView {
@@ -15,9 +16,6 @@ struct HomeView: View {
                     VStack(spacing: 30) {
                         // Header
                         VStack(spacing: 8) {
-                            Text("Sketchy")
-                                .font(.largeTitle)
-                                .fontWeight(.bold)
 
                             Text("Select a template to start drawing")
                                 .font(.subheadline)
@@ -44,7 +42,19 @@ struct HomeView: View {
                     }
                 }
                 .navigationTitle("Sketchy")
-                .navigationBarTitleDisplayMode(.inline)
+                .navigationBarTitleDisplayMode(.large)
+                .toolbar {
+                    ToolbarItem(placement: .navigationBarTrailing) {
+                        Button(action: {
+                            isPaywallPresented = true
+                        }) {
+                            HStack(spacing: 4) {
+                                Image(systemName: "crown.fill")
+                                    .foregroundColor(.yellow)
+                            }
+                        }
+                    }
+                }
 
                 // Floating Import from Photos button
                 VStack {
@@ -82,6 +92,9 @@ struct HomeView: View {
                 }
                 selectedImage = nil
             }
+        }
+        .sheet(isPresented: $isPaywallPresented) {
+            PaywallView(isPresented: $isPaywallPresented)
         }
     }
 }
