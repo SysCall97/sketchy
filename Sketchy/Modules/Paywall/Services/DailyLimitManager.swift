@@ -14,6 +14,17 @@ class DailyLimitManager: ObservableObject {
     @Published var hasFreeDrawingAvailable: Bool = true
     @Published var timeUntilReset: TimeInterval = 0
 
+    // MARK: - Session State
+
+    // Tracks if the indicator has been shown this session (resets to false on app launch)
+    // Using @Published to trigger view updates when this changes
+    private(set) var hasShownIndicatorThisSession = false {
+        didSet {
+            // Trigger view update when this changes
+            objectWillChange.send()
+        }
+    }
+
     // MARK: - Constants
 
     private let freeDrawingsPerDay = 1
@@ -124,6 +135,17 @@ class DailyLimitManager: ObservableObject {
         return max(0, freeDrawingsPerDay - drawingsUsedTodayCount())
     }
 
+    /// Returns whether the daily limit indicator should be shown
+    /// Shown when: limit reached, or if limit was reached this session and has since refilled
+    func shouldShowDailyLimitIndicator() -> Bool {
+        // Show if no free drawings available
+        if !hasFreeDrawingAvailable {
+            return true
+        }
+        // Or if we've shown it before this session (limit was reached and refilled)
+        return hasShownIndicatorThisSession
+    }
+
     // MARK: - Private Methods
 
     private func checkAndResetIfNeeded() {
@@ -166,6 +188,12 @@ class DailyLimitManager: ObservableObject {
     private func updateAvailability() {
         let usedCount = UserDefaults.standard.integer(forKey: Keys.drawingsUsedToday)
         hasFreeDrawingAvailable = usedCount < freeDrawingsPerDay
+
+        // Mark that we've shown the indicator if limit is reached
+        if !hasFreeDrawingAvailable {
+            hasShownIndicatorThisSession = true
+        }
+
         if hasFreeDrawingAvailable {
             startTimer()
         }

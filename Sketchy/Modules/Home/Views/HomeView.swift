@@ -21,7 +21,7 @@ struct HomeView: View {
                                 .font(.subheadline)
                                 .foregroundColor(.secondary)
                         }
-                        .padding(.top, 100)
+                        .padding(.top, DailyLimitManager.shared.shouldShowDailyLimitIndicator() ? 100 : 20)
 
                         // Template Gallery
                         LazyVGrid(columns: [
@@ -45,22 +45,24 @@ struct HomeView: View {
                 .navigationBarTitleDisplayMode(.large)
 
                 // Floating Daily Limit Indicator - positioned under nav bar
-                VStack {
-                    Spacer()
-                        .frame(height: 10) // Account for navigation bar
+                if DailyLimitManager.shared.shouldShowDailyLimitIndicator() {
+                    VStack {
+                        Spacer()
+                            .frame(height: 10) // Account for navigation bar
 
-                    DailyLimitIndicator(
-                        limitManager: DailyLimitManager.shared,
-                        onTapUpgrade: {
-                            isPaywallPresented = true
-                        }
-                    )
-                    .padding(.horizontal)
-                    .padding(.top, 8)
-                    .padding(.bottom, 4)
-                    .background(.clear)
+                        DailyLimitIndicator(
+                            limitManager: DailyLimitManager.shared,
+                            onTapUpgrade: {
+                                isPaywallPresented = true
+                            }
+                        )
+                        .padding(.horizontal)
+                        .padding(.top, 8)
+                        .padding(.bottom, 4)
+                        .background(.clear)
 
-                    Spacer()
+                        Spacer()
+                    }
                 }
 
                 // Floating Import from Photos button
