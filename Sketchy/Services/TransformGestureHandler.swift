@@ -7,6 +7,7 @@ class TransformGestureHandler: ObservableObject {
 
     private var lastTranslation: CGSize = .zero
     private var lastScale: CGFloat = 1.0
+    private var lastRotation: CGFloat = 0.0
 
     // MARK: - Drag Gestures
 
@@ -57,6 +58,27 @@ class TransformGestureHandler: ObservableObject {
         lastScale = 1.0
     }
 
+    // MARK: - Rotation Gestures
+
+    /// Handle rotation gesture
+    func handleRotation(_ value: CGFloat, current: Transform) -> Transform {
+        let rotationDelta = value - lastRotation
+        lastRotation = value
+
+        let newRotation = current.rotation + rotationDelta
+
+        return Transform(
+            translation: current.translation,
+            scale: current.scale,
+            rotation: newRotation
+        )
+    }
+
+    /// Handle rotation gesture end
+    func handleRotationEnded() {
+        lastRotation = 0.0
+    }
+
     // MARK: - Reset
 
     /// Reset transform to identity
@@ -64,5 +86,6 @@ class TransformGestureHandler: ObservableObject {
         currentTransform = .identity
         lastTranslation = .zero
         lastScale = 1.0
+        lastRotation = 0.0
     }
 }

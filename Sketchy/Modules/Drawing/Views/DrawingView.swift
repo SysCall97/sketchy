@@ -25,6 +25,7 @@ struct DrawingView: View {
                 if viewModel.state.mode == .abovePaper {
                     CameraView(cameraService: cameraService)
                         .scaleEffect(viewModel.state.cameraTransform.scale)
+                        .rotationEffect(Angle(radians: viewModel.state.cameraTransform.rotation))
                         .offset(
                             x: viewModel.state.cameraTransform.translation.x,
                             y: viewModel.state.cameraTransform.translation.y
@@ -64,6 +65,20 @@ struct DrawingView: View {
                         gestureHandler.handlePinchEnded()
                     }
             )
+            .simultaneousGesture(
+                RotationGesture()
+                    .onChanged { value in
+                        if !viewModel.state.isTransformLocked &&
+                           viewModel.state.transformTarget == .camera &&
+                           viewModel.state.mode == .abovePaper {
+                            let newTransform = gestureHandler.handleRotation(value.radians, current: viewModel.state.cameraTransform)
+                            viewModel.updateCameraTransform(newTransform)
+                        }
+                    }
+                    .onEnded { _ in
+                        gestureHandler.handleRotationEnded()
+                    }
+            )
 
             // Layer 2: Template image with bounding box overlay
             if let image = viewModel.templateImage {
@@ -84,6 +99,7 @@ struct DrawingView: View {
                         )
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
                         .scaleEffect(viewModel.state.templateTransform.scale)
+                        .rotationEffect(Angle(radians: viewModel.state.templateTransform.rotation))
                         .offset(
                             x: viewModel.state.templateTransform.translation.x,
                             y: viewModel.state.templateTransform.translation.y
@@ -115,6 +131,19 @@ struct DrawingView: View {
                         }
                         .onEnded { _ in
                             gestureHandler.handlePinchEnded()
+                        }
+                )
+                .simultaneousGesture(
+                    RotationGesture()
+                        .onChanged { value in
+                            if !viewModel.state.isTransformLocked &&
+                               viewModel.state.transformTarget == .template {
+                                let newTransform = gestureHandler.handleRotation(value.radians, current: viewModel.state.templateTransform)
+                                viewModel.updateTemplateTransform(newTransform)
+                            }
+                        }
+                        .onEnded { _ in
+                            gestureHandler.handleRotationEnded()
                         }
                 )
             }

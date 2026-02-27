@@ -30,6 +30,10 @@ struct Transform: Equatable {
         let scaleFactor = Float(scale)
         matrix = matrix_scaled(by: float3(scaleFactor, scaleFactor, 1.0))
 
+        // Apply rotation
+        let rotationRadians = Float(rotation)
+        matrix = matrix_rotated(by: rotationRadians)
+
         // Apply translation
         matrix = matrix_translated(by: float3(
             Float(translation.x),
@@ -56,5 +60,16 @@ private func matrix_translated(by translation: float3) -> simd_float4x4 {
     matrix[3, 0] = translation.x
     matrix[3, 1] = translation.y
     matrix[3, 2] = translation.z
+    return matrix
+}
+
+private func matrix_rotated(by angle: Float) -> simd_float4x4 {
+    let cos = cosf(angle)
+    let sin = sinf(angle)
+    var matrix = matrix_identity_float4x4
+    matrix[0, 0] = cos
+    matrix[0, 1] = -sin
+    matrix[1, 0] = sin
+    matrix[1, 1] = cos
     return matrix
 }
