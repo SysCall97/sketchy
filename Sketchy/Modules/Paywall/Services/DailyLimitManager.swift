@@ -2,6 +2,7 @@ import Foundation
 import Combine
 
 /// Manages daily drawing limits for free users
+/// Uses Keychain for storage to persist across app installations
 @MainActor
 class DailyLimitManager: ObservableObject {
 
@@ -17,10 +18,8 @@ class DailyLimitManager: ObservableObject {
     // MARK: - Session State
 
     // Tracks if the indicator has been shown this session (resets to false on app launch)
-    // Using @Published to trigger view updates when this changes
     private(set) var hasShownIndicatorThisSession = false {
         didSet {
-            // Trigger view update when this changes
             objectWillChange.send()
         }
     }
@@ -28,16 +27,16 @@ class DailyLimitManager: ObservableObject {
     // MARK: - Constants
 
     private let freeDrawingsPerDay = 1
-    private let resetWindow: TimeInterval = 20//24 * 60 * 60 // 24 hours in seconds
-    private let timerInterval: TimeInterval = 1.0 // Update every second
+    private let resetWindow: TimeInterval = 24 * 60 * 60
+    private let timerInterval: TimeInterval = 1.0
 
-    // MARK: - UserDefaults Keys
+    // MARK: - Dependencies
 
-    private enum Keys {
-        static let lastDrawingDate = "com.sketchy.lastDrawingDate"
-        static let drawingsUsedToday = "com.sketchy.drawingsUsedToday"
-        static let lastResetDate = "com.sketchy.lastResetDate"
-    }
+    private let keychain = KeychainManager.shared
+
+    // MARK: - Cached Data (for performance)
+
+    private var cachedData: KeychainManager.DailyLimitData?
 
     // MARK: - Timer
 
@@ -46,6 +45,7 @@ class DailyLimitManager: ObservableObject {
     // MARK: - Initialization
 
     private init() {
+        loadDataFromKeychain()
         checkAndResetIfNeeded()
         updateAvailability()
         startTimer()
@@ -54,10 +54,8 @@ class DailyLimitManager: ObservableObject {
     // MARK: - Timer Control
 
     private func startTimer() {
-        // Update time immediately
         updateTimeUntilReset()
 
-        // Start timer to update every second
         timer = Timer.scheduledTimer(withTimeInterval: timerInterval, repeats: true) { [weak self] _ in
             Task { @MainActor [weak self] in
                 self?.updateTimeUntilReset()
@@ -66,16 +64,13 @@ class DailyLimitManager: ObservableObject {
     }
 
     private func updateTimeUntilReset() {
-        let defaults = UserDefaults.standard
-
-        guard let lastReset = defaults.object(forKey: Keys.lastResetDate) as? Date else {
+        guard let lastReset = cachedData?.lastResetDate else {
             return
         }
 
         let timeSinceReset = Date().timeIntervalSince(lastReset)
         let remaining = resetWindow - timeSinceReset
 
-        // Check if reset is needed
         if remaining <= 0 {
             resetDailyCounter()
         } else {
@@ -94,26 +89,29 @@ class DailyLimitManager: ObservableObject {
 
     /// Records a completed drawing session (regardless of whether it was saved or abandoned)
     func recordDrawingSession() {
-        let defaults = UserDefaults.standard
+        loadDataFromKeychain()
 
-        // Get current usage BEFORE incrementing
-        let usedCount = defaults.integer(forKey: Keys.drawingsUsedToday)
-
-        // Increment usage
+        let usedCount = cachedData?.drawingsUsedToday ?? 0
         let newCount = usedCount + 1
-        defaults.set(newCount, forKey: Keys.drawingsUsedToday)
+        let now = Date()
 
-        // Update last drawing date
-        defaults.set(Date(), forKey: Keys.lastDrawingDate)
+        var lastReset = cachedData?.lastResetDate
 
         // If this was the last free drawing (limit reached), start the countdown from now
         if newCount >= freeDrawingsPerDay {
-            // Update lastResetDate to now so countdown starts from this moment
-            defaults.set(Date(), forKey: Keys.lastResetDate)
+            lastReset = now
             timeUntilReset = resetWindow
         }
 
-        // Update availability
+        // Create updated data
+        let newData = KeychainManager.DailyLimitData(
+            lastDrawingDate: now,
+            drawingsUsedToday: newCount,
+            lastResetDate: lastReset ?? now,
+            deviceIdentifier: keychain.getDeviceIdentifier()
+        )
+
+        saveDataToKeychain(newData)
         updateAvailability()
     }
 
@@ -134,7 +132,8 @@ class DailyLimitManager: ObservableObject {
 
     /// Returns the count of free drawings used today
     func drawingsUsedTodayCount() -> Int {
-        return UserDefaults.standard.integer(forKey: Keys.drawingsUsedToday)
+        loadDataFromKeychain()
+        return cachedData?.drawingsUsedToday ?? 0
     }
 
     /// Returns the count of free drawings remaining today
@@ -143,60 +142,75 @@ class DailyLimitManager: ObservableObject {
     }
 
     /// Returns whether the daily limit indicator should be shown
-    /// Shown when: limit reached, or if limit was reached this session and has since refilled
     func shouldShowDailyLimitIndicator() -> Bool {
-        // Show if no free drawings available
         if !hasFreeDrawingAvailable {
             return true
         }
-        // Or if we've shown it before this session (limit was reached and refilled)
         return hasShownIndicatorThisSession
+    }
+
+    // MARK: - Keychain Operations
+
+    private func loadDataFromKeychain() {
+        cachedData = keychain.loadDailyLimitData()
+
+        // If no data exists, create initial data
+        if cachedData == nil {
+            let deviceIdentifier = keychain.getDeviceIdentifier()
+            let initialData = KeychainManager.DailyLimitData(
+                lastDrawingDate: nil,
+                drawingsUsedToday: 0,
+                lastResetDate: Date(),
+                deviceIdentifier: deviceIdentifier
+            )
+            saveDataToKeychain(initialData)
+        }
+    }
+
+    private func saveDataToKeychain(_ data: KeychainManager.DailyLimitData) {
+        cachedData = data
+        keychain.saveDailyLimitData(data)
     }
 
     // MARK: - Private Methods
 
     private func checkAndResetIfNeeded() {
-        let defaults = UserDefaults.standard
+        loadDataFromKeychain()
 
-        // Get last reset date
-        if let lastReset = defaults.object(forKey: Keys.lastResetDate) as? Date {
-            let timeSinceReset = Date().timeIntervalSince(lastReset)
+        guard let lastReset = cachedData?.lastResetDate else {
+            return
+        }
 
-            // If 24 hours have passed, reset the counter
-            if timeSinceReset >= resetWindow {
-                resetDailyCounter()
-            } else {
-                // Update time until reset
-                timeUntilReset = resetWindow - timeSinceReset
-            }
+        let timeSinceReset = Date().timeIntervalSince(lastReset)
+
+        if timeSinceReset >= resetWindow {
+            resetDailyCounter()
         } else {
-            // First time using the app, set the reset date
-            defaults.set(Date(), forKey: Keys.lastResetDate)
-            timeUntilReset = resetWindow
+            timeUntilReset = resetWindow - timeSinceReset
         }
     }
 
     private func resetDailyCounter() {
-        let defaults = UserDefaults.standard
+        let now = Date()
+        let resetData = KeychainManager.DailyLimitData(
+            lastDrawingDate: nil,
+            drawingsUsedToday: 0,
+            lastResetDate: now,
+            deviceIdentifier: keychain.getDeviceIdentifier()
+        )
 
-        // Reset counter
-        defaults.set(0, forKey: Keys.drawingsUsedToday)
-        defaults.set(Date(), forKey: Keys.lastResetDate)
-
-        // Reset time
+        saveDataToKeychain(resetData)
         timeUntilReset = resetWindow
-
-        // Update availability to trigger view refresh
         updateAvailability()
 
         print("DailyLimitManager: Counter reset")
     }
 
     private func updateAvailability() {
-        let usedCount = UserDefaults.standard.integer(forKey: Keys.drawingsUsedToday)
+        loadDataFromKeychain()
+        let usedCount = cachedData?.drawingsUsedToday ?? 0
         hasFreeDrawingAvailable = usedCount < freeDrawingsPerDay
 
-        // Mark that we've shown the indicator if limit is reached
         if !hasFreeDrawingAvailable {
             hasShownIndicatorThisSession = true
         }
