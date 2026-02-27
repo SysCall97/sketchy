@@ -96,15 +96,22 @@ class DailyLimitManager: ObservableObject {
     func recordDrawingSession() {
         let defaults = UserDefaults.standard
 
-        // Get current usage
-        var usedCount = defaults.integer(forKey: Keys.drawingsUsedToday)
+        // Get current usage BEFORE incrementing
+        let usedCount = defaults.integer(forKey: Keys.drawingsUsedToday)
 
         // Increment usage
-        usedCount += 1
-        defaults.set(usedCount, forKey: Keys.drawingsUsedToday)
+        let newCount = usedCount + 1
+        defaults.set(newCount, forKey: Keys.drawingsUsedToday)
 
         // Update last drawing date
         defaults.set(Date(), forKey: Keys.lastDrawingDate)
+
+        // If this was the last free drawing (limit reached), start the countdown from now
+        if newCount >= freeDrawingsPerDay {
+            // Update lastResetDate to now so countdown starts from this moment
+            defaults.set(Date(), forKey: Keys.lastResetDate)
+            timeUntilReset = resetWindow
+        }
 
         // Update availability
         updateAvailability()
