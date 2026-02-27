@@ -1,4 +1,5 @@
 import UIKit
+import Foundation
 
 /// Represents a drawing template that can be traced
 struct TemplateModel: Identifiable, Equatable {
@@ -8,20 +9,39 @@ struct TemplateModel: Identifiable, Equatable {
 
     enum TemplateSource: Equatable {
         case bundled(String)      // Asset name in bundle
+        case remote(String)       // URL string for remote image
         case imported(Data)       // Image data from user import
     }
 
-    /// The template image
+    /// Check if this template has a remote source
+    var isRemote: Bool {
+        if case .remote = source {
+            return true
+        }
+        return false
+    }
+
+    /// Get the remote URL string if applicable
+    var remoteURL: String? {
+        if case .remote(let urlString) = source {
+            return urlString
+        }
+        return nil
+    }
+
+    /// The template image (only for local assets)
     var image: UIImage? {
         switch source {
         case .bundled(let assetName):
             return UIImage(named: assetName)
         case .imported(let imageData):
             return UIImage(data: imageData)
+        case .remote:
+            return nil // Remote images loaded asynchronously
         }
     }
 
-    /// Thumbnail version for gallery display
+    /// Thumbnail version for gallery display (only for local assets)
     var thumbnail: UIImage? {
         guard let image = image else { return nil }
         let size = CGSize(width: 120, height: 120)
@@ -38,7 +58,12 @@ struct TemplateModel: Identifiable, Equatable {
     init(id: UUID = UUID(), name: String, bundledAssetName: String) {
         self.id = id
         self.name = name
-        self.source = .bundled(bundledAssetName)
+        // Detect if it's a URL
+        if bundledAssetName.hasPrefix("http://") || bundledAssetName.hasPrefix("https://") {
+            self.source = .remote(bundledAssetName)
+        } else {
+            self.source = .bundled(bundledAssetName)
+        }
     }
 
     /// Initializer with imported image
@@ -54,11 +79,13 @@ struct TemplateModel: Identifiable, Equatable {
 extension TemplateModel {
     /// Built-in templates included with the app
     static let bundledTemplates: [TemplateModel] = [
-        TemplateModel(name: "Alpaca", bundledAssetName: "alpaca"),
-        TemplateModel(name: "Bird", bundledAssetName: "bird"),
-        TemplateModel(name: "Bunny", bundledAssetName: "bunny"),
-        TemplateModel(name: "Cat", bundledAssetName: "cat"),
-        TemplateModel(name: "Sword", bundledAssetName: "sword"),
-        TemplateModel(name: "Fox", bundledAssetName: "fox")
+        TemplateModel(name: "", bundledAssetName: "alpaca"),
+        TemplateModel(name: "", bundledAssetName: "bird"),
+        TemplateModel(name: "", bundledAssetName: "bunny"),
+        TemplateModel(name: "", bundledAssetName: "cat"),
+        TemplateModel(name: "", bundledAssetName: "sword"),
+        TemplateModel(name: "", bundledAssetName: "fox"),
+        TemplateModel(name: "", bundledAssetName: "witch"),
+        TemplateModel(name: "", bundledAssetName: "bird2")
     ]
 }

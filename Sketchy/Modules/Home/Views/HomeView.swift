@@ -1,4 +1,5 @@
 import SwiftUI
+import Combine
 
 /// Home screen - Template selection landing page
 struct HomeView: View {
@@ -76,30 +77,95 @@ struct TemplateThumbnail: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            // Thumbnail image
-            ZStack {
-                RoundedRectangle(cornerRadius: 12)
-                    .fill(Color.gray.opacity(0.2))
-                    .frame(height: 150)
+            // Thumbnail image with original aspect ratio
+            CachedAsyncImage(url: template.remoteURL, localImage: template.image)
+        }
+    }
+}
 
-                if let image = template.thumbnail {
-                    Image(uiImage: image)
-                        .resizable()
-                        .aspectRatio(contentMode: .fit)
-                        .frame(height: 150)
-                        .clipShape(RoundedRectangle(cornerRadius: 12))
-                } else {
-                    Image(systemName: "photo")
-                        .font(.largeTitle)
-                        .foregroundColor(.gray)
-                }
+/// Async image view with caching support
+struct CachedAsyncImage: View {
+    let url: String?
+    let localImage: UIImage?
+
+    @StateObject private var imageLoader = ImageLoader()
+    @State private var loadedImage: UIImage?
+    @State private var containerHeight: CGFloat = 150
+
+    var body: some View {
+        let displayImage: UIImage? = localImage ?? loadedImage
+
+        ZStack {
+            RoundedRectangle(cornerRadius: 12)
+                .fill(Color.gray.opacity(0.2))
+
+            if let image = displayImage {
+                Image(uiImage: image)
+                    .resizable()
+                    .aspectRatio(contentMode: .fit)
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
+            } else if url != nil {
+                // Loading state
+                ProgressView()
+                    .progressViewStyle(CircularProgressViewStyle())
+                    .scaleEffect(1.2)
+            } else {
+                // Placeholder
+                Image(systemName: "photo")
+                    .font(.largeTitle)
+                    .foregroundColor(.gray)
+            }
+        }
+        .frame(height: containerHeight)
+        .onAppear {
+            // Calculate initial height for local image
+            if let image = localImage {
+                let aspectRatio = image.size.width / image.size.height
+                containerHeight = 160 / aspectRatio
             }
 
-            // Template name
-            Text(template.name)
-                .font(.caption)
-                .fontWeight(.medium)
-                .lineLimit(1)
+            // Load remote image if needed
+            if let urlString = url {
+                imageLoader.loadImage(from: urlString) { image in
+                    loadedImage = image
+                    let aspectRatio = image.size.width / image.size.height
+                    containerHeight = 160 / aspectRatio
+                }
+            }
+        }
+        .onChange(of: imageLoader.image) { newImage in
+            if let image = newImage {
+                let aspectRatio = image.size.width / image.size.height
+                containerHeight = 160 / aspectRatio
+            }
+        }
+    }
+}
+
+/// Image loader with caching
+class ImageLoader: ObservableObject {
+    @Published var image: UIImage?
+    private var cache = ImageCache.shared
+
+    func loadImage(from urlString: String, completion: @escaping (UIImage) -> Void = { _ in }) {
+        // Check cache first
+        if let cachedImage = cache.getImage(for: urlString) {
+            self.image = cachedImage
+            completion(cachedImage)
+            return
+        }
+
+        // Load from URL
+        Task {
+            do {
+                let downloadedImage = try await cache.loadImage(from: urlString)
+                await MainActor.run {
+                    self.image = downloadedImage
+                    completion(downloadedImage)
+                }
+            } catch {
+                print("Failed to load image from \(urlString): \(error)")
+            }
         }
     }
 }
