@@ -3,7 +3,7 @@ import SwiftUI
 /// Paywall screen for subscription upgrade
 struct PaywallView: View {
     @Binding var isPresented: Bool
-    let subscriptionManager: SubscriptionManager
+    @ObservedObject var subscriptionManager: SubscriptionManager
     let productID: String
 
     var body: some View {
@@ -133,13 +133,27 @@ struct PaywallView: View {
                 }
             }
         }
+        .onChange(of: subscriptionManager.currentPurchaseState) { newState in
+            if subscriptionManager.isSubscribedOrUnlockedAll() {
+                dismissPaywall()
+            }
+        }
+    }
+
+    private func dismissPaywall() {
+        // Small delay for user to see success
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+            isPresented = false
+        }
     }
 
     private func handleSubscribe() {
+        subscriptionManager.testPurchase()
         subscriptionManager.purchaseRequest(productID: productID)
     }
 
     private func handleRestore() {
+        subscriptionManager.testPurchase()
         subscriptionManager.restorePurchase()
     }
 }
@@ -163,9 +177,18 @@ struct BenefitRow: View {
 }
 
 #Preview {
-    PaywallView(
-        isPresented: .constant(true),
-        subscriptionManager: SubscriptionManager(),
-        productID: "com.sketchy.subscription.weekly"
-    )
+    StatefulPreviewWrapper()
+}
+
+private struct StatefulPreviewWrapper: View {
+    @State private var isPresented = true
+    @StateObject var subscriptionManager = SubscriptionManager()
+
+    var body: some View {
+        PaywallView(
+            isPresented: $isPresented,
+            subscriptionManager: subscriptionManager,
+            productID: "com.sketchy.subscription.weekly"
+        )
+    }
 }

@@ -77,6 +77,7 @@ class SubscriptionManager: NSObject, ObservableObject {
     
     weak var confirmInScene: UIWindowScene?
     @Published var loaderStatus: IAProgressStatus = .none
+    var testVariable: Bool = false
     
     override init() {
         super.init()
@@ -547,7 +548,12 @@ extension SubscriptionManager {
     }
     
     func isSubscribedOrUnlockedAll() -> Bool {
-        return self.purchasedProducts.isEmpty == false
+        return self.purchasedProducts.isEmpty == false || testVariable
+    }
+    
+    func testPurchase() {
+        self.currentPurchaseState = .PurchaseSuccessful
+        self.testVariable = true
     }
 }
 

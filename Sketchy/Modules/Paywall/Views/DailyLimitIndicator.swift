@@ -3,7 +3,7 @@ import SwiftUI
 /// Indicator showing daily free drawing availability
 struct DailyLimitIndicator: View {
     @ObservedObject var limitManager: DailyLimitManager
-    let subscriptionManager: SubscriptionManager
+    @ObservedObject var subscriptionManager: SubscriptionManager
     var onTapUpgrade: (() -> Void)?
 
     var body: some View {
