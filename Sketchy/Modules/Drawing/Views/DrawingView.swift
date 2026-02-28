@@ -133,7 +133,8 @@ struct DrawingView: View {
             .simultaneousGesture(
                 TapGesture(count: 2)
                     .onEnded {
-                        if viewModel.state.transformTarget == .camera &&
+                        if !viewModel.state.isTransformLocked &&
+                            viewModel.state.transformTarget == .camera &&
                            viewModel.state.mode == .abovePaper {
                             viewModel.resetCurrentTransform()
                         }
@@ -234,7 +235,8 @@ struct DrawingView: View {
                 .simultaneousGesture(
                     TapGesture(count: 2)
                         .onEnded {
-                            if viewModel.state.transformTarget == .template {
+                            if !viewModel.state.isTransformLocked &&
+                                viewModel.state.transformTarget == .template {
                                 viewModel.resetCurrentTransform()
                             }
                         }
