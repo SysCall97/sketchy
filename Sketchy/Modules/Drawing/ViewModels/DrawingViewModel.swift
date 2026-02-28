@@ -109,7 +109,7 @@ class DrawingViewModel: ObservableObject, CameraServiceDelegate {
             isFlashlightOn: false,                           // Always off on switch
             transformTarget: .template,                      // RESET
             isTransformLocked: false,                        // RESET
-            selectedTab: .opacity,                           // RESET to default
+            selectedTab: mode == .underPaper ? .brightness : .opacity,  // Set default tab based on mode
             captureMode: .photo,                             // RESET to default
             isRecording: false,                              // RESET
             isFlashlightAvailable: true                      // RESET

@@ -16,52 +16,77 @@ struct ControlTabBar: View {
 
             // Tab bar
             HStack(spacing: 0) {
-                // Opacity tab
-                ControlTab(
-                    icon: "circle.circle",
-                    title: "Opacity",
-                    isSelected: viewModel.state.selectedTab == .opacity
-                ) {
-                    viewModel.setSelectedTab(.opacity)
-                }
+                if viewModel.state.mode == .abovePaper {
+                    // ABOVE PAPER MODE TABS
+                    // Opacity tab
+                    ControlTab(
+                        icon: "circle.circle",
+                        title: "Opacity",
+                        isSelected: viewModel.state.selectedTab == .opacity
+                    ) {
+                        viewModel.setSelectedTab(.opacity)
+                    }
 
-                Divider()
-                    .frame(height: 40)
+                    Divider()
+                        .frame(height: 40)
 
-                // Scaling tab
-                ControlTab(
-                    icon: "arrow.up.left.and.arrow.down.right",
-                    title: "Scaling",
-                    isSelected: viewModel.state.selectedTab == .scaling
-                ) {
-                    viewModel.setSelectedTab(.scaling)
-                }
+                    // Scaling tab
+                    ControlTab(
+                        icon: "arrow.up.left.and.arrow.down.right",
+                        title: "Scaling",
+                        isSelected: viewModel.state.selectedTab == .scaling
+                    ) {
+                        viewModel.setSelectedTab(.scaling)
+                    }
 
-                Divider()
-                    .frame(height: 40)
+                    Divider()
+                        .frame(height: 40)
 
-                // Camera tab
-                ControlTab(
-                    icon: "camera",
-                    title: "Camera",
-                    isSelected: viewModel.state.selectedTab == .camera
-                ) {
-                    viewModel.setSelectedTab(.camera)
-                }
+                    // Camera tab
+                    ControlTab(
+                        icon: "camera",
+                        title: "Camera",
+                        isSelected: viewModel.state.selectedTab == .camera
+                    ) {
+                        viewModel.setSelectedTab(.camera)
+                    }
 
-                Divider()
-                    .frame(height: 40)
+                    Divider()
+                        .frame(height: 40)
 
-                // Flashlight tab
-                ControlTab(
-                    icon: viewModel.state.isFlashlightOn ? "flashlight.on.fill" : "flashlight.off.fill",
-                    title: "Flashlight",
-                    isSelected: viewModel.state.selectedTab == .flashlight
-                ) {
-                    // Always toggle flashlight when tapped
-                    viewModel.toggleFlashlight()
-                    // Update selected tab to flashlight
-                    viewModel.setSelectedTab(.flashlight)
+                    // Flashlight tab
+                    ControlTab(
+                        icon: viewModel.state.isFlashlightOn ? "flashlight.on.fill" : "flashlight.off.fill",
+                        title: "Flashlight",
+                        isSelected: viewModel.state.selectedTab == .flashlight
+                    ) {
+                        // Always toggle flashlight when tapped
+                        viewModel.toggleFlashlight()
+                        // Update selected tab to flashlight
+                        viewModel.setSelectedTab(.flashlight)
+                    }
+                } else {
+                    // UNDER PAPER MODE TABS
+                    // Opacity tab
+                    ControlTab(
+                        icon: "circle.circle",
+                        title: "Opacity",
+                        isSelected: viewModel.state.selectedTab == .opacity
+                    ) {
+                        viewModel.setSelectedTab(.opacity)
+                    }
+
+                    Divider()
+                        .frame(height: 40)
+
+                    // Brightness tab
+                    ControlTab(
+                        icon: "sun.max.fill",
+                        title: "Brightness",
+                        isSelected: viewModel.state.selectedTab == .brightness
+                    ) {
+                        viewModel.setSelectedTab(.brightness)
+                    }
                 }
             }
             .padding(.horizontal, 8)
@@ -94,6 +119,8 @@ struct ControlTabBar: View {
                 cameraContent
             case .flashlight:
                 EmptyView()
+            case .brightness:
+                brightnessContent
             }
         }
         .padding()
@@ -144,6 +171,23 @@ struct ControlTabBar: View {
                 .font(.caption)
                 .foregroundColor(.white.opacity(0.7))
                 .multilineTextAlignment(.center)
+        }
+        .padding()
+    }
+
+    // MARK: - Brightness Content
+
+    private var brightnessContent: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Brightness: \(Int(viewModel.state.brightness * 100))%")
+                .font(.caption)
+                .foregroundColor(.white)
+
+            Slider(value: Binding(
+                get: { viewModel.state.brightness },
+                set: { viewModel.setBrightness($0) }
+            ), in: 0.5...1)
+            .tint(.yellow)
         }
         .padding()
     }

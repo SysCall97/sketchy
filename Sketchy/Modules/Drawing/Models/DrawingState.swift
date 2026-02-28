@@ -17,6 +17,7 @@ struct DrawingState {
         case scaling
         case camera
         case flashlight
+        case brightness
     }
 
     enum CaptureMode {
