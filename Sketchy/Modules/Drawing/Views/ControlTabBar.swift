@@ -58,13 +58,11 @@ struct ControlTabBar: View {
                     ControlTab(
                         icon: viewModel.state.isFlashlightOn ? "flashlight.on.fill" : "flashlight.off.fill",
                         title: "Flashlight",
-                        isSelected: viewModel.state.selectedTab == .flashlight,
-                        customColor: viewModel.state.isFlashlightOn ? Color.yellow : nil
+                        isSelected: false,
+                        customColor: viewModel.state.isFlashlightOn ? Color.yellow : .black
                     ) {
-                        // Always toggle flashlight when tapped
+                        // Toggle flashlight without changing selected tab
                         viewModel.toggleFlashlight()
-                        // Update selected tab to flashlight
-                        viewModel.setSelectedTab(.flashlight)
                     }
                 } else {
                     // UNDER PAPER MODE TABS
@@ -105,8 +103,8 @@ struct ControlTabBar: View {
     }
 
     private var isContentCollapsed: Bool {
-        // Flashlight tab is just a toggle, no expanded content
-        viewModel.state.selectedTab == .flashlight
+        // Flashlight has no content, but since it's never selected, content is always shown for other tabs
+        false
     }
 
     @ViewBuilder
