@@ -9,7 +9,7 @@ class DrawingViewModel: ObservableObject, CameraServiceDelegate {
     @Published var templateImage: UIImage?
 
     // Services
-    private let cameraService: CameraService
+    var cameraService: CameraService  // Make accessible for CaptureControlsView
     private let flashlightService: FlashlightService
     private let brightnessService: BrightnessService
     private let autoLockService: AutoLockService
@@ -19,10 +19,11 @@ class DrawingViewModel: ObservableObject, CameraServiceDelegate {
 
     init(
         template: TemplateModel,
-        initialState: DrawingState? = nil
+        initialState: DrawingState? = nil,
+        cameraService: CameraService? = nil
     ) {
         // Initialize services
-        self.cameraService = CameraService()
+        self.cameraService = cameraService ?? CameraService()
         self.flashlightService = FlashlightService()
         self.brightnessService = BrightnessService()
         self.autoLockService = AutoLockService()
@@ -36,7 +37,11 @@ class DrawingViewModel: ObservableObject, CameraServiceDelegate {
             brightness: 0.5,
             isFlashlightOn: false,
             transformTarget: DrawingState.TransformTarget.template,
-            isTransformLocked: false
+            isTransformLocked: false,
+            selectedTab: DrawingState.ControlTab.opacity,
+            captureMode: DrawingState.CaptureMode.photo,
+            isRecording: false,
+            isFlashlightAvailable: true
         )
 
         // Load template
@@ -103,7 +108,11 @@ class DrawingViewModel: ObservableObject, CameraServiceDelegate {
             brightness: newBrightness,                       // RESET if entering under
             isFlashlightOn: false,                           // Always off on switch
             transformTarget: .template,                      // RESET
-            isTransformLocked: false                         // RESET
+            isTransformLocked: false,                        // RESET
+            selectedTab: .opacity,                           // RESET to default
+            captureMode: .photo,                             // RESET to default
+            isRecording: false,                              // RESET
+            isFlashlightAvailable: true                      // RESET
         )
 
         await handleModeChange(mode: mode, from: oldMode)
@@ -180,6 +189,50 @@ class DrawingViewModel: ObservableObject, CameraServiceDelegate {
         let newState = !state.isFlashlightOn
         flashlightService.toggle(newState)
         state = state.with(isFlashlightOn: newState)
+    }
+
+    // MARK: - Tab Selection
+
+    func setSelectedTab(_ tab: DrawingState.ControlTab) {
+        state = state.with(selectedTab: tab)
+    }
+
+    // MARK: - Capture Mode
+
+    func setCaptureMode(_ mode: DrawingState.CaptureMode) {
+        // Can't change capture mode while recording
+        guard !state.isRecording else { return }
+        state = state.with(captureMode: mode)
+    }
+
+    // MARK: - Photo/Video Capture
+
+    func capturePhoto(completion: @escaping (Result<URL, CaptureError>) -> Void) {
+        cameraService.capturePhoto(completion: completion)
+    }
+
+    func startRecording(completion: @escaping (Result<Void, CaptureError>) -> Void) {
+        guard state.mode == .abovePaper else {
+            completion(.failure(.cameraNotAvailable))
+            return
+        }
+
+        cameraService.startRecording { [weak self] result in
+            switch result {
+            case .success:
+                self?.state = self?.state.with(isRecording: true) ?? self?.state ?? .initial
+                completion(.success(()))
+            case .failure(let error):
+                completion(.failure(error))
+            }
+        }
+    }
+
+    func stopRecording(completion: @escaping (Result<URL, CaptureError>) -> Void) {
+        cameraService.stopRecording { [weak self] result in
+            self?.state = self?.state.with(isRecording: false) ?? self?.state ?? .initial
+            completion(result)
+        }
     }
 
     // MARK: - CameraServiceDelegate

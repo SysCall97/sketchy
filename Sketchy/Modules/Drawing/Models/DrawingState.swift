@@ -12,6 +12,18 @@ struct DrawingState {
         case camera
     }
 
+    enum ControlTab {
+        case opacity
+        case scaling
+        case camera
+        case flashlight
+    }
+
+    enum CaptureMode {
+        case photo
+        case video
+    }
+
     // MARK: - Properties
 
     let mode: DrawingMode
@@ -22,6 +34,10 @@ struct DrawingState {
     let isFlashlightOn: Bool
     let transformTarget: TransformTarget
     let isTransformLocked: Bool
+    let selectedTab: ControlTab
+    let captureMode: CaptureMode
+    let isRecording: Bool
+    let isFlashlightAvailable: Bool
 
     // MARK: - Initial State
 
@@ -33,7 +49,11 @@ struct DrawingState {
         brightness: 0.5,
         isFlashlightOn: false,
         transformTarget: DrawingState.TransformTarget.template,
-        isTransformLocked: false
+        isTransformLocked: false,
+        selectedTab: DrawingState.ControlTab.opacity,
+        captureMode: DrawingState.CaptureMode.photo,
+        isRecording: false,
+        isFlashlightAvailable: true
     )
 
     // MARK: - Builder Pattern
@@ -45,7 +65,11 @@ struct DrawingState {
               brightness: Double? = nil,
               isFlashlightOn: Bool? = nil,
               transformTarget: TransformTarget? = nil,
-              isTransformLocked: Bool? = nil) -> DrawingState {
+              isTransformLocked: Bool? = nil,
+              selectedTab: ControlTab? = nil,
+              captureMode: CaptureMode? = nil,
+              isRecording: Bool? = nil,
+              isFlashlightAvailable: Bool? = nil) -> DrawingState {
         DrawingState(
             mode: mode ?? self.mode,
             templateTransform: templateTransform ?? self.templateTransform,
@@ -54,7 +78,11 @@ struct DrawingState {
             brightness: brightness ?? self.brightness,
             isFlashlightOn: isFlashlightOn ?? self.isFlashlightOn,
             transformTarget: transformTarget ?? self.transformTarget,
-            isTransformLocked: isTransformLocked ?? self.isTransformLocked
+            isTransformLocked: isTransformLocked ?? self.isTransformLocked,
+            selectedTab: selectedTab ?? self.selectedTab,
+            captureMode: captureMode ?? self.captureMode,
+            isRecording: isRecording ?? self.isRecording,
+            isFlashlightAvailable: isFlashlightAvailable ?? self.isFlashlightAvailable
         )
     }
 }
@@ -70,7 +98,11 @@ extension DrawingState: Equatable {
                lhs.brightness == rhs.brightness &&
                lhs.isFlashlightOn == rhs.isFlashlightOn &&
                lhs.transformTarget == rhs.transformTarget &&
-               lhs.isTransformLocked == rhs.isTransformLocked
+               lhs.isTransformLocked == rhs.isTransformLocked &&
+               lhs.selectedTab == rhs.selectedTab &&
+               lhs.captureMode == rhs.captureMode &&
+               lhs.isRecording == rhs.isRecording &&
+               lhs.isFlashlightAvailable == rhs.isFlashlightAvailable
     }
 }
 

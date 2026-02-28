@@ -14,20 +14,32 @@ struct DrawingView: View {
     init(coordinator: AppCoordinator, template: TemplateModel, initialMode: DrawingState.DrawingMode = .abovePaper) {
         self.coordinator = coordinator
         self.template = template
+
+        // Create shared camera service
+        let sharedCameraService = CameraService()
+
+        // Create view model with shared camera service
+        let initialState = DrawingState(
+            mode: initialMode,
+            templateTransform: .identity,
+            cameraTransform: .identity,
+            opacity: 0.5,
+            brightness: 0.5,
+            isFlashlightOn: false,
+            transformTarget: .template,
+            isTransformLocked: false,
+            selectedTab: .opacity,
+            captureMode: .photo,
+            isRecording: false,
+            isFlashlightAvailable: true
+        )
+
+        self._cameraService = StateObject(wrappedValue: sharedCameraService)
         self._viewModel = StateObject(wrappedValue: DrawingViewModel(
             template: template,
-            initialState: DrawingState(
-                mode: initialMode,
-                templateTransform: .identity,
-                cameraTransform: .identity,
-                opacity: 0.5,
-                brightness: 0.5,
-                isFlashlightOn: false,
-                transformTarget: .template,
-                isTransformLocked: false
-            )
+            initialState: initialState,
+            cameraService: sharedCameraService
         ))
-        self._cameraService = StateObject(wrappedValue: CameraService())
     }
 
     var body: some View {
@@ -182,9 +194,8 @@ struct DrawingView: View {
 
                 Spacer()
 
-                // Bottom: Control panel
-                ControlPanelView(viewModel: viewModel)
-                .padding()
+                // Bottom: Control tab bar
+                ControlTabBar(viewModel: viewModel)
                 .offset(y: isUIVisible ? 0 : 500)
                 .animation(.easeInOut(duration: 0.3), value: isUIVisible)
             }
