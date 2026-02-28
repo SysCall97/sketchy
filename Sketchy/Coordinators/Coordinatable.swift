@@ -12,6 +12,7 @@ protocol Coordinatable: ObservableObject {
 /// Navigation routes available in the app
 enum CoordinatorRoute: Hashable {
     case home
-    case drawing(template: TemplateModel)
+    case modeSelection(template: TemplateModel)
+    case drawing(template: TemplateModel, mode: DrawingState.DrawingMode)
     case templateGallery
 }

@@ -110,8 +110,10 @@ struct RootView: View {
                     switch route {
                     case .home:
                         HomeView(coordinator: coordinator)
-                    case .drawing(let template):
-                        DrawingView(coordinator: coordinator, template: template)
+                    case .modeSelection(let template):
+                        ModeSelectionView(coordinator: coordinator, template: template)
+                    case .drawing(let template, let mode):
+                        DrawingView(coordinator: coordinator, template: template, initialMode: mode)
                     case .templateGallery:
                         TemplateGalleryView(coordinator: coordinator)
                     }

@@ -27,9 +27,19 @@ class AppCoordinator: Coordinatable {
         navigationPath.removeLast(navigationPath.count)
     }
 
-    /// Navigate to drawing screen with a template
+    /// Navigate to drawing screen with a template (routes through mode selection)
     func goToDrawing(with template: TemplateModel) {
-        navigate(to: .drawing(template: template))
+        navigate(to: .modeSelection(template: template))
+    }
+
+    /// Navigate to mode selection screen with a template
+    func goToModeSelection(with template: TemplateModel) {
+        navigate(to: .modeSelection(template: template))
+    }
+
+    /// Navigate to drawing screen with a template and mode
+    func goToDrawing(with template: TemplateModel, mode: DrawingState.DrawingMode) {
+        navigate(to: .drawing(template: template, mode: mode))
     }
 
     /// Navigate to template gallery

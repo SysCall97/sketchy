@@ -74,17 +74,23 @@ struct HomeView: View {
                     }) {
                         HStack {
                             Image(systemName: "photo.on.rectangle.angled")
-                            Text("Import from Photos")
+                            Text("Import your illustration")
                         }
                         .font(.headline)
                         .foregroundColor(.white)
-                        .padding()
                         .frame(maxWidth: .infinity)
-                        .background(Color.blue)
+                        .padding()
+                        .background(
+                            LinearGradient(
+                                gradient: Gradient(colors: [Color.blue, Color.purple]),
+                                startPoint: .leading,
+                                endPoint: .trailing
+                            )
+                        )
                         .cornerRadius(12)
                         .shadow(radius: 4)
                     }
-                    .padding(.horizontal, 20)
+                    .padding(.horizontal)
                     .padding(.bottom, 20)
                 }
         }

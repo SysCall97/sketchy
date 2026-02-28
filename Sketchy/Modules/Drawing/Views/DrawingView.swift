@@ -11,10 +11,22 @@ struct DrawingView: View {
     @State private var gestureHandler = TransformGestureHandler()
     @State private var isUIVisible = true
 
-    init(coordinator: AppCoordinator, template: TemplateModel) {
+    init(coordinator: AppCoordinator, template: TemplateModel, initialMode: DrawingState.DrawingMode = .abovePaper) {
         self.coordinator = coordinator
         self.template = template
-        self._viewModel = StateObject(wrappedValue: DrawingViewModel(template: template))
+        self._viewModel = StateObject(wrappedValue: DrawingViewModel(
+            template: template,
+            initialState: DrawingState(
+                mode: initialMode,
+                templateTransform: .identity,
+                cameraTransform: .identity,
+                opacity: 0.5,
+                brightness: 0.5,
+                isFlashlightOn: false,
+                transformTarget: .template,
+                isTransformLocked: false
+            )
+        ))
         self._cameraService = StateObject(wrappedValue: CameraService())
     }
 
@@ -150,7 +162,7 @@ struct DrawingView: View {
 
             // Layer 4: UI Controls
             VStack {
-                // Top: Mode switch + back button
+                // Top: Back button
                 HStack {
                     Button(action: {
                         coordinator.goBack()
@@ -163,15 +175,6 @@ struct DrawingView: View {
                     }
 
                     Spacer()
-
-                    ModeSwitchView(
-                        currentMode: viewModel.state.mode,
-                        onModeChange: { mode in
-                            Task {
-                                await viewModel.switchMode(to: mode)
-                            }
-                        }
-                    )
                 }
                 .padding()
                 .offset(y: isUIVisible ? 0 : -150)
