@@ -88,7 +88,8 @@ Sketchy/
 │   ├── Drawing/                       # Main drawing interface
 │   │   ├── Views/
 │   │   │   ├── DrawingView.swift
-│   │   │   ├── ControlPanelView.swift
+│   │   │   ├── ControlTabBar.swift
+│   │   │   ├── CaptureControlsView.swift
 │   │   │   └── TemplateBoundingBoxView.swift
 │   │   ├── ViewModels/
 │   │   │   └── DrawingViewModel.swift
@@ -659,4 +660,4 @@ Before committing changes, verify:
 *Last Updated: February 2026*
 *Version: 1.0*
 *Architecture: MVVM + Coordinator*
-*Minimum iOS: 17.0*
+*Minimum iOS: 16.0*
