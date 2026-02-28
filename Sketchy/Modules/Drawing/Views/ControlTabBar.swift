@@ -137,26 +137,10 @@ struct ControlTabBar: View {
             }
             .pickerStyle(.segmented)
 
-            // Reset button
-            Button(action: {
-                viewModel.resetCurrentTransform()
-            }) {
-                HStack {
-                    Image(systemName: "arrow.counterclockwise")
-                    Text("Reset Position")
-                }
-                .font(.caption)
-                .foregroundColor(.white)
-                .padding(.horizontal, 16)
-                .padding(.vertical, 8)
-                .background(Color.blue.opacity(0.8))
-                .cornerRadius(8)
-            }
-
             // Instructions
             Text(viewModel.state.transformTarget == .template ?
-                 "Drag, pinch, and rotate to adjust the template" :
-                 "Drag, pinch, and rotate to adjust the camera")
+                 "Drag, pinch, and rotate to adjust the template\nDouble-tap to reset position" :
+                 "Drag, pinch, and rotate to adjust the camera\nDouble-tap to reset position")
                 .font(.caption)
                 .foregroundColor(.white.opacity(0.7))
                 .multilineTextAlignment(.center)

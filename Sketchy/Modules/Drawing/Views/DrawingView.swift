@@ -47,14 +47,41 @@ struct DrawingView: View {
             // Layer 1: Camera or white background (with transforms)
             GeometryReader { geometry in
                 if viewModel.state.mode == .abovePaper {
-                    CameraView(cameraService: cameraService)
-                        .scaleEffect(viewModel.state.cameraTransform.scale)
-                        .rotationEffect(Angle(radians: viewModel.state.cameraTransform.rotation))
-                        .offset(
-                            x: viewModel.state.cameraTransform.translation.x,
-                            y: viewModel.state.cameraTransform.translation.y
-                        )
-                        .position(x: geometry.size.width / 2, y: geometry.size.height / 2)
+                    ZStack {
+                        CameraView(cameraService: cameraService)
+                            .scaleEffect(viewModel.state.cameraTransform.scale)
+                            .rotationEffect(Angle(radians: viewModel.state.cameraTransform.rotation))
+                            .offset(
+                                x: viewModel.state.cameraTransform.translation.x,
+                                y: viewModel.state.cameraTransform.translation.y
+                            )
+                            .position(x: geometry.size.width / 2, y: geometry.size.height / 2)
+
+                        // Lock button for camera transform
+                        if viewModel.state.transformTarget == .camera {
+                            VStack {
+                                HStack {
+                                    Spacer()
+
+                                    Button(action: {
+                                        viewModel.toggleTransformLock()
+                                    }) {
+                                        ZStack {
+                                            Circle()
+                                                .fill(Color.black.opacity(0.6))
+                                                .frame(width: 44, height: 44)
+
+                                            Image(systemName: viewModel.state.isTransformLocked ? "lock.fill" : "lock.open.fill")
+                                                .font(.system(size: 18))
+                                                .foregroundColor(viewModel.state.isTransformLocked ? .orange : .white)
+                                        }
+                                    }
+                                    .padding(8)
+                                }
+                                Spacer()
+                            }
+                        }
+                    }
                 } else {
                     Color.white
                         .ignoresSafeArea()
@@ -103,6 +130,15 @@ struct DrawingView: View {
                         gestureHandler.handleRotationEnded()
                     }
             )
+            .simultaneousGesture(
+                TapGesture(count: 2)
+                    .onEnded {
+                        if viewModel.state.transformTarget == .camera &&
+                           viewModel.state.mode == .abovePaper {
+                            viewModel.resetCurrentTransform()
+                        }
+                    }
+            )
 
             // Layer 2: Template image with bounding box overlay
             if let image = viewModel.templateImage {
@@ -112,12 +148,37 @@ struct DrawingView: View {
                         .aspectRatio(contentMode: .fit)
                         .opacity(viewModel.state.opacity)
                         .overlay(
-                            // Bounding box overlay (if unlocked and active)
-                            Group {
-                                if !viewModel.state.isTransformLocked &&
-                                   viewModel.state.transformTarget == .template {
-                                    Rectangle()
-                                        .stroke(Color.white.opacity(0.8), lineWidth: 2)
+                            // Bounding box overlay and lock button
+                            ZStack {
+                                if viewModel.state.transformTarget == .template {
+                                    // Bounding box (if unlocked)
+                                    if !viewModel.state.isTransformLocked {
+                                        Rectangle()
+                                            .stroke(Color.white.opacity(0.8), lineWidth: 2)
+                                    }
+
+                                    // Lock button (top-right corner)
+                                    VStack {
+                                        HStack {
+                                            Spacer()
+
+                                            Button(action: {
+                                                viewModel.toggleTransformLock()
+                                            }) {
+                                                ZStack {
+                                                    Circle()
+                                                        .fill(Color.black.opacity(0.6))
+                                                        .frame(width: 44, height: 44)
+
+                                                    Image(systemName: viewModel.state.isTransformLocked ? "lock.fill" : "lock.open.fill")
+                                                        .font(.system(size: 18))
+                                                        .foregroundColor(viewModel.state.isTransformLocked ? .orange : .white)
+                                                }
+                                            }
+                                            .padding(8)
+                                        }
+                                        Spacer()
+                                    }
                                 }
                             }
                         )
@@ -170,6 +231,14 @@ struct DrawingView: View {
                             gestureHandler.handleRotationEnded()
                         }
                 )
+                .simultaneousGesture(
+                    TapGesture(count: 2)
+                        .onEnded {
+                            if viewModel.state.transformTarget == .template {
+                                viewModel.resetCurrentTransform()
+                            }
+                        }
+                )
             }
 
             // Layer 4: UI Controls
@@ -189,7 +258,7 @@ struct DrawingView: View {
                     Spacer()
                 }
                 .padding()
-                .offset(y: isUIVisible ? 0 : -150)
+                .offset(y: isUIVisible ? 50 : -150)
                 .animation(.easeInOut(duration: 0.3), value: isUIVisible)
 
                 Spacer()
@@ -202,6 +271,7 @@ struct DrawingView: View {
         }
         .navigationBarHidden(true)
         .statusBar(hidden: true)
+        .ignoresSafeArea()
         .onTapGesture {
             // Toggle UI visibility on tap
             isUIVisible.toggle()

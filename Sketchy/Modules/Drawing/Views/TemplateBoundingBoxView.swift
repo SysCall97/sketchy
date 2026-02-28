@@ -4,48 +4,82 @@ import SwiftUI
 struct TemplateBoundingBoxView: View {
     let transform: Transform
     let isActive: Bool
+    let isLocked: Bool
     let onDrag: (DragGesture.Value) -> Void
     let onPinch: (MagnificationGesture.Value) -> Void
+    let onLockToggle: () -> Void
 
     @State private var currentScale: CGFloat = 1.0
 
     var body: some View {
         GeometryReader { geometry in
-            Rectangle()
-                .stroke(isActive ? Color.white.opacity(0.8) : Color.clear, lineWidth: 2)
-                .background(Color.clear)
-                .frame(width: 300 * transform.scale, height: 400 * transform.scale)
-                .offset(
-                    x: transform.translation.x,
-                    y: transform.translation.y
-                )
-                .gesture(
-                    DragGesture()
-                        .onChanged { value in
-                            onDrag(value)
+            ZStack {
+                Rectangle()
+                    .stroke(isActive ? Color.white.opacity(0.8) : Color.clear, lineWidth: 2)
+                    .background(Color.clear)
+                    .frame(width: 300 * transform.scale, height: 400 * transform.scale)
+                    .offset(
+                        x: transform.translation.x,
+                        y: transform.translation.y
+                    )
+                    .gesture(
+                        DragGesture()
+                            .onChanged { value in
+                                onDrag(value)
+                            }
+                    )
+                    .gesture(
+                        MagnificationGesture()
+                            .onChanged { value in
+                                currentScale = value
+                                onPinch(value)
+                            }
+                            .onEnded { _ in
+                                currentScale = 1.0
+                            }
+                    )
+                    .overlay(
+                        // Corner handles
+                        Group {
+                            if isActive && !isLocked {
+                                cornerHandle(at: .topLeading)
+                                cornerHandle(at: .topTrailing)
+                                cornerHandle(at: .bottomLeading)
+                                cornerHandle(at: .bottomTrailing)
+                            }
                         }
-                )
-                .gesture(
-                    MagnificationGesture()
-                        .onChanged { value in
-                            currentScale = value
-                            onPinch(value)
+                    )
+                    .overlay(
+                        // Lock button
+                        Group {
+                            if isActive {
+                                lockButton
+                            }
                         }
-                        .onEnded { _ in
-                            currentScale = 1.0
-                        }
-                )
-                .overlay(
-                    // Corner handles
-                    Group {
-                        if isActive {
-                            cornerHandle(at: .topLeading)
-                            cornerHandle(at: .topTrailing)
-                            cornerHandle(at: .bottomLeading)
-                            cornerHandle(at: .bottomTrailing)
-                        }
+                    )
+            }
+        }
+    }
+
+    private var lockButton: some View {
+        VStack {
+            HStack {
+                Spacer()
+
+                Button(action: onLockToggle) {
+                    ZStack {
+                        Circle()
+                            .fill(Color.black.opacity(0.6))
+                            .frame(width: 44, height: 44)
+
+                        Image(systemName: isLocked ? "lock.fill" : "lock.open.fill")
+                            .font(.system(size: 18))
+                            .foregroundColor(isLocked ? .orange : .white)
                     }
-                )
+                }
+                .padding(8)
+            }
+            Spacer()
         }
     }
 
