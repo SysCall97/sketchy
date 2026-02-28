@@ -10,7 +10,7 @@ struct ControlTabBar: View {
             // Expandable content area (appears above tabs)
             if !isContentCollapsed {
                 contentView
-                    .padding(.bottom, 16)
+                    .padding(.bottom, -10)
                     .transition(.move(edge: .top).combined(with: .opacity))
             }
 
@@ -58,7 +58,8 @@ struct ControlTabBar: View {
                     ControlTab(
                         icon: viewModel.state.isFlashlightOn ? "flashlight.on.fill" : "flashlight.off.fill",
                         title: "Flashlight",
-                        isSelected: viewModel.state.selectedTab == .flashlight
+                        isSelected: viewModel.state.selectedTab == .flashlight,
+                        customColor: viewModel.state.isFlashlightOn ? Color.yellow : nil
                     ) {
                         // Always toggle flashlight when tapped
                         viewModel.toggleFlashlight()
@@ -91,7 +92,8 @@ struct ControlTabBar: View {
             }
             .padding(.horizontal, 8)
             .padding(.vertical, 12)
-            .background(Color.black.opacity(0.8))
+            .background(Color.white)
+            .cornerRadius(12, corners: [.topLeft, .topRight])
         }
         .alert("Error", isPresented: .constant(errorMessage != nil), presenting: errorMessage) { _ in
             Button("OK") {
@@ -124,8 +126,8 @@ struct ControlTabBar: View {
             }
         }
         .padding()
-        .background(Color.black.opacity(0.7))
-        .cornerRadius(16)
+        .background(Color(.systemGray6))
+        .cornerRadius(12, corners: [.topLeft, .topRight])
     }
 
     // MARK: - Opacity Content
@@ -134,7 +136,7 @@ struct ControlTabBar: View {
         VStack(alignment: .leading, spacing: 8) {
             Text("Opacity: \(Int(viewModel.state.opacity * 100))%")
                 .font(.caption)
-                .foregroundColor(.white)
+                .foregroundColor(.black)
 
             Slider(value: Binding(
                 get: { viewModel.state.opacity },
@@ -169,7 +171,7 @@ struct ControlTabBar: View {
                  "Drag, pinch, and rotate to adjust the template\nDouble-tap to reset position" :
                  "Drag, pinch, and rotate to adjust the camera\nDouble-tap to reset position")
                 .font(.caption)
-                .foregroundColor(.white.opacity(0.7))
+                .foregroundColor(.black.opacity(0.7))
                 .multilineTextAlignment(.center)
         }
         .padding()
@@ -181,7 +183,7 @@ struct ControlTabBar: View {
         VStack(alignment: .leading, spacing: 8) {
             Text("Brightness: \(Int(viewModel.state.brightness * 100))%")
                 .font(.caption)
-                .foregroundColor(.white)
+                .foregroundColor(.black)
 
             Slider(value: Binding(
                 get: { viewModel.state.brightness },
@@ -205,6 +207,7 @@ struct ControlTab: View {
     let icon: String
     let title: String
     let isSelected: Bool
+    var customColor: Color? = nil
     let action: () -> Void
 
     var body: some View {
@@ -212,16 +215,27 @@ struct ControlTab: View {
             VStack(spacing: 6) {
                 Image(systemName: icon)
                     .font(.system(size: 20))
-                    .foregroundColor(isSelected ? .blue : .white)
+                    .foregroundColor(iconColor)
 
                 Text(title)
                     .font(.caption2)
-                    .foregroundColor(isSelected ? .blue : .white)
+                    .foregroundColor(iconColor)
             }
             .frame(maxWidth: .infinity)
             .padding(.vertical, 8)
-            .background(isSelected ? Color.white.opacity(0.1) : Color.clear)
+            .background(backgroundColor)
             .cornerRadius(8)
         }
+    }
+
+    private var iconColor: Color {
+        if let customColor = customColor {
+            return customColor
+        }
+        return isSelected ? .purple : .black
+    }
+
+    private var backgroundColor: Color {
+        return Color.clear
     }
 }

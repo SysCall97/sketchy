@@ -86,13 +86,13 @@ struct CaptureControlsView: View {
                         .frame(width: 10, height: 10)
                     Text("Recording...")
                         .font(.caption)
-                        .foregroundColor(.white)
+                        .foregroundColor(.black)
                 }
                 .transition(.opacity)
             }
         }
         .padding()
-        .background(Color.black.opacity(0.7))
+        .background(Color.clear)
         .cornerRadius(16)
     }
 }
