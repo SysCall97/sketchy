@@ -39,6 +39,7 @@ struct PaywallView: View {
                     // Benefits List
                     VStack(alignment: .leading, spacing: 12) {
                         BenefitRow(icon: "infinity", title: "Unlimited drawings every day")
+                        BenefitRow(icon: "infinity", title: "Unlimited project savings every day")
 //                        BenefitRow(icon: "photo.on.rectangle.angled", title: "Full access to all templates")
 //                        BenefitRow(icon: "camera", title: "Both camera & lightbox modes")
                         BenefitRow(icon: "sparkles", title: "All future features included")
