@@ -108,7 +108,7 @@ struct HomeView: View {
 
     private var headerSection: some View {
         VStack(spacing: 8) {
-            Text("Select a template to start drawing")
+            Text("Select a \(selectedTab == .projects ? "project" : "template") to start drawing")
                 .font(.subheadline)
                 .foregroundColor(.secondary)
         }

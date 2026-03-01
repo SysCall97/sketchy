@@ -7,6 +7,10 @@ struct ProjectsListView: View {
     @State private var showDeleteAlert = false
     @State private var projectToDelete: ProjectModel?
 
+    // Paywall state for opening projects
+    @State private var isPaywallPresented = false
+    @State private var pendingProject: ProjectModel?
+
     var body: some View {
         Group {
             if projects.isEmpty {
@@ -17,6 +21,18 @@ struct ProjectsListView: View {
         }
         .onAppear {
             loadProjects()
+        }
+        .sheet(isPresented: $isPaywallPresented) {
+            PaywallView(
+                isPresented: $isPaywallPresented,
+                subscriptionManager: coordinator.subscriptionManager,
+                productID: "com.sketchy.subscription.weekly"
+            )
+        }
+        .onChange(of: isPaywallPresented) { isPresented in
+            if !isPresented {
+                handlePaywallDismissal()
+            }
         }
     }
 
@@ -115,8 +131,42 @@ struct ProjectsListView: View {
             return
         }
 
-        let drawingState = project.toDrawingState()
-        coordinator.goToDrawing(with: template, initialState: drawingState)
+        if canStartDrawing() {
+            // User can draw, proceed directly
+            let drawingState = project.toDrawingState()
+            coordinator.goToDrawing(with: template, initialState: drawingState)
+        } else {
+            // Limit reached, show paywall
+            pendingProject = project
+            isPaywallPresented = true
+        }
+    }
+
+    private func canStartDrawing() -> Bool {
+        let isSubscribed = coordinator.subscriptionManager.isSubscribedOrUnlockedAll()
+        return isSubscribed || DailyLimitManager.shared.canStartDrawing()
+    }
+
+    private func handlePaywallDismissal() {
+        // Check if user subscribed after paywall
+        if coordinator.subscriptionManager.isSubscribedOrUnlockedAll(),
+           let project = pendingProject {
+            // Wait for paywall dismissal animation to complete, then proceed with pending project
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
+                guard let template = getTemplate(for: project.templateID) else {
+                    print("ProjectsListView: Template not found for project")
+                    pendingProject = nil
+                    return
+                }
+
+                let drawingState = project.toDrawingState()
+                pendingProject = nil
+                coordinator.goToDrawing(with: template, initialState: drawingState)
+            }
+        } else {
+            // User didn't subscribe, clear pending state
+            pendingProject = nil
+        }
     }
 
     private func deleteProject() {
