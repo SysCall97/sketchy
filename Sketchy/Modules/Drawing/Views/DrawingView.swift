@@ -285,15 +285,7 @@ struct DrawingView: View {
             // Record the drawing session (uses daily free drawing)
             DailyLimitManager.shared.recordDrawingSession()
 
-            // Request camera authorization first
-            let authorized = await cameraService.requestAuthorization()
-
             await viewModel.startDrawing()
-
-            // Start camera if in above paper mode and authorized
-            if viewModel.state.mode == .abovePaper && authorized {
-                await cameraService.startSession()
-            }
         }
         .onDisappear {
             viewModel.stopDrawing()
@@ -301,7 +293,7 @@ struct DrawingView: View {
         }
         .onChange(of: viewModel.state.mode) { newMode in
             Task {
-                if newMode == .abovePaper && cameraService.isAuthorized {
+                if newMode == .abovePaper {
                     await cameraService.startSession()
                 } else {
                     cameraService.stopSession()

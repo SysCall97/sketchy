@@ -1,4 +1,5 @@
 import SwiftUI
+import AVFoundation
 
 /// Mode selection screen - Choose between drawing modes
 struct ModeSelectionView: View {
@@ -6,6 +7,9 @@ struct ModeSelectionView: View {
     let template: TemplateModel
 
     @StateObject private var viewModel: ModeSelectionViewModel
+    @State private var showPermissionAlert = false
+    @State private var permissionDeniedMessage = ""
+    @State private var pendingMode: DrawingState.DrawingMode?
 
     init(coordinator: AppCoordinator, template: TemplateModel) {
         self.coordinator = coordinator
@@ -72,8 +76,8 @@ struct ModeSelectionView: View {
 
                 // Continue button
                 Button(action: {
-                    let drawingMode = viewModel.confirmSelection()
-                    coordinator.goToDrawing(with: template, mode: drawingMode)
+                    let selectedMode = viewModel.confirmSelection()
+                    handleContinue(with: selectedMode)
                 }) {
                     HStack {
                         Text("Continue")
@@ -112,6 +116,70 @@ struct ModeSelectionView: View {
 //                }
 //            }
 //        }
+        .alert("Camera Permission Required", isPresented: $showPermissionAlert) {
+            Button("Cancel", role: .cancel) {
+                pendingMode = nil
+            }
+            Button("Settings") {
+                openAppSettings()
+            }
+        } message: {
+            Text(permissionDeniedMessage)
+        }
+    }
+
+    // MARK: - Camera Permission
+
+    private func handleContinue(with mode: DrawingState.DrawingMode) {
+        // Check if camera permission is needed for Above Paper mode
+        if mode == .abovePaper {
+            Task {
+                await requestCameraPermissionAndProceed(mode: mode)
+            }
+        } else {
+            // Under Paper mode doesn't need camera permission
+            coordinator.goToDrawing(with: template, mode: mode)
+        }
+    }
+
+    @MainActor
+    private func requestCameraPermissionAndProceed(mode: DrawingState.DrawingMode) async {
+        let status = AVCaptureDevice.authorizationStatus(for: .video)
+
+        switch status {
+        case .notDetermined:
+            // Request permission
+            let granted = await AVCaptureDevice.requestAccess(for: .video)
+            if granted {
+                // Permission granted, proceed to drawing
+                coordinator.goToDrawing(with: template, mode: mode)
+            } else {
+                // Permission denied
+                showPermissionDeniedAlert()
+            }
+
+        case .authorized:
+            // Permission already granted, proceed to drawing
+            coordinator.goToDrawing(with: template, mode: mode)
+
+        case .denied, .restricted:
+            // Permission previously denied, show alert
+            showPermissionDeniedAlert()
+
+        @unknown default:
+            break
+        }
+    }
+
+    private func showPermissionDeniedAlert() {
+        permissionDeniedMessage = "Camera access is needed for the Above Paper drawing mode. Please enable it in Settings to continue."
+        showPermissionAlert = true
+    }
+
+    private func openAppSettings() {
+        if let settingsUrl = URL(string: UIApplication.openSettingsURLString) {
+            UIApplication.shared.open(settingsUrl)
+        }
     }
 }
 

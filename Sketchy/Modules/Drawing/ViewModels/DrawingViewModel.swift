@@ -1,6 +1,7 @@
 import Foundation
 import UIKit
 import Combine
+import AVFoundation
 
 /// ViewModel for the drawing screen - Manages all drawing state
 @MainActor
@@ -70,12 +71,12 @@ class DrawingViewModel: ObservableObject, CameraServiceDelegate {
             await loadRemoteTemplate(from: urlString)
         }
 
-        // Request camera permission if needed
+        // Camera permission is already handled in ModeSelectionView
+        // Update authorization status and start camera if in above paper mode
         if state.mode == .abovePaper {
-            let authorized = await cameraService.requestAuthorization()
-            if authorized {
-                cameraService.startSession()
-            }
+            // Update isAuthorized flag based on current status
+            cameraService.isAuthorized = (AVCaptureDevice.authorizationStatus(for: .video) == .authorized)
+            cameraService.startSession()
         } else {
             // Set initial brightness for under mode
             brightnessService.setBrightness(state.brightness)
