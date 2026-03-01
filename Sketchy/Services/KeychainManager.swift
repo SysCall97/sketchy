@@ -15,6 +15,7 @@ class KeychainManager {
     private enum Keys {
         static let service = "com.sketchy.keychain"
         static let dailyLimitData = "dailyLimitData"
+        static let favoriteTemplates = "favoriteTemplates"
     }
 
     // MARK: - Daily Limit Data
@@ -135,6 +136,79 @@ class KeychainManager {
 
         SecItemAdd(addQuery as CFDictionary, nil)
         return newIdentifier
+    }
+
+    // MARK: - Favorite Templates
+
+    /// Saves favorite template IDs to keychain
+    func saveFavoriteTemplates(_ templateIDs: [String]) {
+        guard let encoded = try? JSONEncoder().encode(templateIDs) else {
+            print("KeychainManager: Failed to encode favorite templates")
+            return
+        }
+
+        let query: [String: Any] = [
+            kSecClass as String: kSecClassGenericPassword,
+            kSecAttrService as String: Keys.service,
+            kSecAttrAccount as String: Keys.favoriteTemplates,
+            kSecValueData as String: encoded
+        ]
+
+        // Delete existing item first
+        SecItemDelete(query as CFDictionary)
+
+        // Add new item
+        let status = SecItemAdd(query as CFDictionary, nil)
+        if status != errSecSuccess {
+            print("KeychainManager: Failed to save favorite templates - \(status)")
+        } else {
+            print("KeychainManager: Favorite templates saved (\(templateIDs.count) templates)")
+        }
+    }
+
+    /// Loads favorite template IDs from keychain
+    func loadFavoriteTemplates() -> [String] {
+        let query: [String: Any] = [
+            kSecClass as String: kSecClassGenericPassword,
+            kSecAttrService as String: Keys.service,
+            kSecAttrAccount as String: Keys.favoriteTemplates,
+            kSecReturnData as String: true,
+            kSecMatchLimit as String: kSecMatchLimitOne
+        ]
+
+        var result: AnyObject?
+        let status = SecItemCopyMatching(query as CFDictionary, &result)
+
+        guard status == errSecSuccess,
+              let data = result as? Data,
+              let decoded = try? JSONDecoder().decode([String].self, from: data) else {
+            print("KeychainManager: No favorite templates found")
+            return []
+        }
+
+        print("KeychainManager: Loaded \(decoded.count) favorite templates")
+        return decoded
+    }
+
+    /// Adds a template to favorites
+    func addFavoriteTemplate(_ templateID: String) {
+        var favorites = loadFavoriteTemplates()
+        if !favorites.contains(templateID) {
+            favorites.append(templateID)
+            saveFavoriteTemplates(favorites)
+        }
+    }
+
+    /// Removes a template from favorites
+    func removeFavoriteTemplate(_ templateID: String) {
+        var favorites = loadFavoriteTemplates()
+        favorites.removeAll { $0 == templateID }
+        saveFavoriteTemplates(favorites)
+    }
+
+    /// Checks if a template is in favorites
+    func isTemplateFavorite(_ templateID: String) -> Bool {
+        return loadFavoriteTemplates().contains(templateID)
     }
 
     /// Resets all keychain data (for testing purposes)
