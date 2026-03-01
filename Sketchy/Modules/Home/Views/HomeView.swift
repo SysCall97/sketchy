@@ -101,6 +101,7 @@ struct HomeView: View {
                     .padding(.bottom, 20)
                 }
         }
+        .background(Color(.systemGray6))
         .navigationTitle("Sketchy")
         .navigationBarTitleDisplayMode(.large)
         .onAppear {
