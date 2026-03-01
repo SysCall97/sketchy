@@ -77,6 +77,20 @@ class DrawingViewModel: ObservableObject, CameraServiceDelegate {
             // Update isAuthorized flag based on current status
             cameraService.isAuthorized = (AVCaptureDevice.authorizationStatus(for: .video) == .authorized)
             cameraService.startSession()
+
+            // Initialize flashlight based on saved state
+            // Wait for camera session to fully start before toggling flashlight
+            if state.isFlashlightOn {
+                // Wait for camera to start running and stabilize
+                try? await Task.sleep(nanoseconds: 800_000_000) // 0.8 second delay
+
+                // Double-check state hasn't changed and turn on flashlight on main thread
+                if state.isFlashlightOn {
+                    await MainActor.run {
+                        flashlightService.toggle(true)
+                    }
+                }
+            }
         } else {
             // Set initial brightness for under mode
             brightnessService.setBrightness(state.brightness)

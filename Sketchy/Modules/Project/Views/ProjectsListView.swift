@@ -173,7 +173,7 @@ struct ProjectThumbnail: View {
                 .lineLimit(2)
 
             // Date
-            Text(project.createdAt, style: .relative)
+            Text(project.createdAt, style: .date)
                 .font(.caption2)
                 .foregroundColor(.secondary)
         }
