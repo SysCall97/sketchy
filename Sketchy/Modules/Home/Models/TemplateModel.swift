@@ -86,6 +86,7 @@ extension TemplateModel {
         TemplateModel(name: "", bundledAssetName: "sword"),
         TemplateModel(name: "", bundledAssetName: "fox"),
         TemplateModel(name: "", bundledAssetName: "witch"),
+        TemplateModel(name: "", bundledAssetName: "https://ik.imagekit.io/emsz3rdawz/pedroml-animal-8582447_640.jpg"),
         TemplateModel(name: "", bundledAssetName: "bird2")
     ]
 }

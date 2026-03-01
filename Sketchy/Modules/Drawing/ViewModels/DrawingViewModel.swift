@@ -14,6 +14,9 @@ class DrawingViewModel: ObservableObject, CameraServiceDelegate {
     private let brightnessService: BrightnessService
     private let autoLockService: AutoLockService
 
+    // Template
+    private let template: TemplateModel
+
     // Metal rendering
     private var metalRenderer: MetalRenderer?
 
@@ -22,6 +25,9 @@ class DrawingViewModel: ObservableObject, CameraServiceDelegate {
         initialState: DrawingState? = nil,
         cameraService: CameraService? = nil
     ) {
+        // Store template
+        self.template = template
+
         // Initialize services
         self.cameraService = cameraService ?? CameraService()
         self.flashlightService = FlashlightService()
@@ -47,7 +53,7 @@ class DrawingViewModel: ObservableObject, CameraServiceDelegate {
             isFlashlightAvailable: true
         )
 
-        // Load template
+        // Load template (local only, remote loaded in startDrawing)
         self.templateImage = template.image
 
         // Set up camera delegate
@@ -59,6 +65,11 @@ class DrawingViewModel: ObservableObject, CameraServiceDelegate {
     func startDrawing() async {
         autoLockService.disableAutoLock()
 
+        // Load remote template if needed
+        if template.isRemote, let urlString = template.remoteURL {
+            await loadRemoteTemplate(from: urlString)
+        }
+
         // Request camera permission if needed
         if state.mode == .abovePaper {
             let authorized = await cameraService.requestAuthorization()
@@ -68,6 +79,17 @@ class DrawingViewModel: ObservableObject, CameraServiceDelegate {
         } else {
             // Set initial brightness for under mode
             brightnessService.setBrightness(state.brightness)
+        }
+    }
+
+    // MARK: - Template Loading
+
+    private func loadRemoteTemplate(from urlString: String) async {
+        do {
+            let image = try await ImageCache.shared.loadImage(from: urlString)
+            self.templateImage = image
+        } catch {
+            print("Failed to load remote template: \(error)")
         }
     }
 
