@@ -186,7 +186,7 @@ struct ControlTabBar: View {
             Slider(value: Binding(
                 get: { viewModel.state.brightness },
                 set: { viewModel.setBrightness($0) }
-            ), in: 0.5...1)
+            ), in: 0...1)
             .tint(.yellow)
         }
         .padding()

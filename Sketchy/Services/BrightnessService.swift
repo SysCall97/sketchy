@@ -2,32 +2,30 @@ import UIKit
 
 /// Service for managing screen brightness
 class BrightnessService {
-    private var originalBrightness: CGFloat = 0.5
+    private var originalBrightness: CGFloat
 
     init() {
-        saveOriginalBrightness()
+        // Capture the current device brightness
+        self.originalBrightness = UIScreen.main.brightness
     }
 
     // MARK: - Brightness Management
 
-    private func saveOriginalBrightness() {
-        originalBrightness = UIScreen.main.brightness
-    }
-
     /// Set screen brightness
     /// - Parameter value: Brightness value between 0.0 and 1.0
     func setBrightness(_ value: Double) {
-        let systemBrightness = max(0.5, min(1.0, value))
+        // Clamp to valid range 0.0 - 1.0 (allowing full 0-100%)
+        let systemBrightness = max(0.0, min(1.0, value))
 
         DispatchQueue.main.async {
             UIScreen.main.brightness = systemBrightness
         }
     }
 
-    /// Restore brightness to original value
+    /// Restore brightness to original device value
     func restoreBrightness() {
         DispatchQueue.main.async { [weak self] in
-            UIScreen.main.brightness = self?.originalBrightness ?? 0.5
+            UIScreen.main.brightness = self?.originalBrightness ?? UIScreen.main.brightness
         }
     }
 

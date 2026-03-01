@@ -28,13 +28,16 @@ class DrawingViewModel: ObservableObject, CameraServiceDelegate {
         self.brightnessService = BrightnessService()
         self.autoLockService = AutoLockService()
 
+        // Get current device brightness
+        let deviceBrightness = Double(UIScreen.main.brightness)
+
         // Initialize state
         self.state = initialState ?? DrawingState(
             mode: DrawingState.DrawingMode.abovePaper,
             templateTransform: Transform.identity,
             cameraTransform: Transform.identity,
             opacity: 0.5,
-            brightness: 0.5,
+            brightness: deviceBrightness,
             isFlashlightOn: false,
             transformTarget: DrawingState.TransformTarget.template,
             isTransformLocked: false,
@@ -91,10 +94,10 @@ class DrawingViewModel: ObservableObject, CameraServiceDelegate {
             newCameraTransform = state.cameraTransform
         }
 
-        // Reset brightness to safe default for under mode
+        // Reset brightness to device brightness for under mode
         let newBrightness: Double
         if mode == .underPaper {
-            newBrightness = 0.5  // Safe default
+            newBrightness = Double(UIScreen.main.brightness)  // Use current device brightness
         } else {
             newBrightness = state.brightness
         }

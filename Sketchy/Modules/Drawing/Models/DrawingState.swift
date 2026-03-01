@@ -1,4 +1,5 @@
 import Foundation
+import UIKit
 
 /// Represents the complete state of a drawing session
 struct DrawingState {
@@ -47,7 +48,7 @@ struct DrawingState {
         templateTransform: Transform.identity,
         cameraTransform: Transform.identity,
         opacity: 0.5,
-        brightness: 0.5,
+        brightness: Double(UIScreen.main.brightness),  // Use current device brightness
         isFlashlightOn: false,
         transformTarget: DrawingState.TransformTarget.template,
         isTransformLocked: false,

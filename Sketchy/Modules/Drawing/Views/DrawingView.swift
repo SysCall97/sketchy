@@ -18,13 +18,16 @@ struct DrawingView: View {
         // Create shared camera service
         let sharedCameraService = CameraService()
 
+        // Get current device brightness
+        let deviceBrightness = Double(UIScreen.main.brightness)
+
         // Create view model with shared camera service
         let initialState = DrawingState(
             mode: initialMode,
             templateTransform: .identity,
             cameraTransform: .identity,
             opacity: 0.5,
-            brightness: 0.5,
+            brightness: deviceBrightness,
             isFlashlightOn: false,
             transformTarget: .template,
             isTransformLocked: false,
