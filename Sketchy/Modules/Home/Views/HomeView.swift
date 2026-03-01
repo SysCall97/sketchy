@@ -1,5 +1,6 @@
 import SwiftUI
 import Combine
+import Photos
 
 /// Home screen - Template selection landing page
 struct HomeView: View {
@@ -9,6 +10,8 @@ struct HomeView: View {
     @State private var isPhotoPickerPresented = false
     @State private var selectedImage: UIImage?
     @State private var isPaywallPresented = false
+    @State private var showPermissionAlert = false
+    @State private var permissionDeniedMessage = ""
 
     // Paywall flow state
     @State private var pendingTemplate: TemplateModel?
@@ -71,7 +74,10 @@ struct HomeView: View {
                     Spacer()
 
                     Button(action: {
-                        isPhotoPickerPresented = true
+                        // Request photo library permission before opening picker
+                        Task {
+                            await requestPhotoLibraryPermission()
+                        }
                     }) {
                         HStack {
                             Image(systemName: "photo.on.rectangle.angled")
@@ -139,6 +145,14 @@ struct HomeView: View {
                 handlePaywallDismissal()
             }
         }
+        .alert("Permission Required", isPresented: $showPermissionAlert) {
+            Button("Cancel", role: .cancel) { }
+            Button("Settings") {
+                openAppSettings()
+            }
+        } message: {
+            Text(permissionDeniedMessage)
+        }
     }
 
     // MARK: - Helper Methods
@@ -185,6 +199,48 @@ struct HomeView: View {
             // User didn't subscribe, clear pending state
             pendingTemplate = nil
             pendingImage = nil
+        }
+    }
+
+    // MARK: - Permissions
+
+    @MainActor
+    private func requestPhotoLibraryPermission() async {
+        let status = PHPhotoLibrary.authorizationStatus(for: .addOnly)
+
+        switch status {
+        case .notDetermined:
+            // Request permission
+            let newStatus = await PHPhotoLibrary.requestAuthorization(for: .addOnly)
+            if newStatus == .authorized || newStatus == .limited {
+                // Permission granted, show photo picker
+                isPhotoPickerPresented = true
+            } else {
+                // Permission denied
+                showPermissionAlert(for: "Photo library access is needed to import your own drawing templates.")
+            }
+
+        case .authorized, .limited:
+            // Permission already granted, show photo picker
+            isPhotoPickerPresented = true
+
+        case .denied, .restricted:
+            // Permission denied, show alert with settings option
+            showPermissionAlert(for: "Photo library access is needed to import your own drawing templates. Please enable it in Settings.")
+
+        @unknown default:
+            break
+        }
+    }
+
+    private func showPermissionAlert(for message: String) {
+        permissionDeniedMessage = message
+        showPermissionAlert = true
+    }
+
+    private func openAppSettings() {
+        if let settingsUrl = URL(string: UIApplication.openSettingsURLString) {
+            UIApplication.shared.open(settingsUrl)
         }
     }
 }
