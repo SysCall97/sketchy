@@ -2,15 +2,65 @@ import UIKit
 import Foundation
 
 /// Represents a drawing template that can be traced
-struct TemplateModel: Identifiable, Equatable, Hashable {
+struct TemplateModel: Identifiable, Equatable, Hashable, Codable {
     let id: UUID
     let name: String
     let source: TemplateSource
 
-    enum TemplateSource: Equatable, Hashable {
+    enum TemplateSource: Equatable, Hashable, Codable {
         case bundled(String)      // Asset name in bundle
         case remote(String)       // URL string for remote image
         case imported(Data)       // Image data from user import
+    }
+
+    // MARK: - Firebase Decodable Support
+
+    /// Custom decoding for Firebase JSON structure
+    /// Firebase format: [{"id": "uuid-string", "name": "image-url"}]
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+
+        // Decode id
+        let idString = try container.decode(String.self, forKey: .id)
+        guard let idUUID = UUID(uuidString: idString) else {
+            throw DecodingError.dataCorruptedError(forKey: .id, in: container, debugDescription: "Invalid UUID string")
+        }
+        self.id = idUUID
+
+        // Decode name (which is actually the URL for Firebase templates)
+        let urlString = try container.decode(String.self, forKey: .name)
+
+        // Detect if it's a URL and set source accordingly
+        if urlString.hasPrefix("http://") || urlString.hasPrefix("https://") {
+            self.name = ""  // Firebase templates don't have names
+            self.source = .remote(urlString)
+        } else {
+            self.name = urlString
+            self.source = .bundled(urlString)
+        }
+    }
+
+    /// Standard encoding support
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+
+        try container.encode(id.uuidString, forKey: .id)
+
+        // For encoding, we use the source to determine what to store in "name"
+        switch source {
+        case .remote(let url):
+            try container.encode(url, forKey: .name)
+        case .bundled(let assetName):
+            try container.encode(name.isEmpty ? assetName : name, forKey: .name)
+        case .imported:
+            // Can't encode imported data to Firebase format
+            try container.encode(name, forKey: .name)
+        }
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case id
+        case name
     }
 
     /// Check if this template has a remote source
@@ -77,16 +127,21 @@ struct TemplateModel: Identifiable, Equatable, Hashable {
 // MARK: - Default Templates
 
 extension TemplateModel {
-    /// Built-in templates included with the app
-    static let bundledTemplates: [TemplateModel] = [
-        TemplateModel(name: "", bundledAssetName: "alpaca"),
-        TemplateModel(name: "", bundledAssetName: "bird"),
-        TemplateModel(name: "", bundledAssetName: "bunny"),
-        TemplateModel(name: "", bundledAssetName: "cat"),
-        TemplateModel(name: "", bundledAssetName: "sword"),
-        TemplateModel(name: "", bundledAssetName: "fox"),
-        TemplateModel(name: "", bundledAssetName: "witch"),
-        TemplateModel(name: "", bundledAssetName: "https://ik.imagekit.io/emsz3rdawz/pedroml-animal-8582447_640.jpg"),
-        TemplateModel(name: "", bundledAssetName: "bird2")
+    /// Built-in templates included with the app (local assets only)
+    static let localTemplates: [TemplateModel] = [
+        TemplateModel(id: UUID(uuidString: "00000000-0000-0000-0000-000000000001")!, name: "", bundledAssetName: "alpaca"),
+        TemplateModel(id: UUID(uuidString: "00000000-0000-0000-0000-000000000002")!, name: "", bundledAssetName: "bird"),
+        TemplateModel(id: UUID(uuidString: "00000000-0000-0000-0000-000000000003")!, name: "", bundledAssetName: "bunny"),
+        TemplateModel(id: UUID(uuidString: "00000000-0000-0000-0000-000000000004")!, name: "", bundledAssetName: "cat"),
+        TemplateModel(id: UUID(uuidString: "00000000-0000-0000-0000-000000000005")!, name: "", bundledAssetName: "sword"),
+        TemplateModel(id: UUID(uuidString: "00000000-0000-0000-0000-000000000006")!, name: "", bundledAssetName: "fox"),
+        TemplateModel(id: UUID(uuidString: "00000000-0000-0000-0000-000000000007")!, name: "", bundledAssetName: "witch"),
+        TemplateModel(id: UUID(uuidString: "00000000-0000-0000-0000-000000000008")!, name: "", bundledAssetName: "bird2")
     ]
+
+    /// All available templates (local + Firebase remote)
+    /// Combines bundled local templates with remote templates from Firebase
+    static var bundledTemplates: [TemplateModel] {
+        localTemplates + FirebaseManager.shared.remoteTemplates
+    }
 }

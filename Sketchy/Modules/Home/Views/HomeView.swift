@@ -4,7 +4,8 @@ import Combine
 /// Home screen - Template selection landing page
 struct HomeView: View {
     @ObservedObject var coordinator: AppCoordinator
-    @State private var templates = TemplateModel.bundledTemplates
+    @ObservedObject private var firebaseManager = FirebaseManager.shared
+    @State private var templates = TemplateModel.localTemplates
     @State private var isPhotoPickerPresented = false
     @State private var selectedImage: UIImage?
     @State private var isPaywallPresented = false
@@ -96,6 +97,14 @@ struct HomeView: View {
         }
         .navigationTitle("Sketchy")
         .navigationBarTitleDisplayMode(.large)
+        .onAppear {
+            // Start observing Firebase templates
+            firebaseManager.observeTemplates()
+        }
+        .onChange(of: firebaseManager.remoteTemplates) { remoteTemplates in
+            // Update templates when Firebase data changes
+            templates = TemplateModel.localTemplates + remoteTemplates
+        }
         .sheet(isPresented: $isPhotoPickerPresented) {
             PhotoPickerView(selectedImage: $selectedImage, isPresented: $isPhotoPickerPresented)
         }

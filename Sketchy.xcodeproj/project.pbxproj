@@ -6,6 +6,11 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		04CFFF332F54840800BE84B8 /* FirebaseAnalytics in Frameworks */ = {isa = PBXBuildFile; productRef = 04CFFF322F54840800BE84B8 /* FirebaseAnalytics */; };
+		04CFFF352F54840800BE84B8 /* FirebaseDatabase in Frameworks */ = {isa = PBXBuildFile; productRef = 04CFFF342F54840800BE84B8 /* FirebaseDatabase */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXContainerItemProxy section */
 		044FF2A22F51542200FAB267 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -52,6 +57,8 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				04CFFF352F54840800BE84B8 /* FirebaseDatabase in Frameworks */,
+				04CFFF332F54840800BE84B8 /* FirebaseAnalytics in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -112,6 +119,8 @@
 			);
 			name = Sketchy;
 			packageProductDependencies = (
+				04CFFF322F54840800BE84B8 /* FirebaseAnalytics */,
+				04CFFF342F54840800BE84B8 /* FirebaseDatabase */,
 			);
 			productName = Sketchy;
 			productReference = 044FF2942F51542100FAB267 /* Sketchy.app */;
@@ -195,6 +204,9 @@
 			);
 			mainGroup = 044FF28B2F51542100FAB267;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				04CFFF312F54840800BE84B8 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 044FF2952F51542100FAB267 /* Products */;
 			projectDirPath = "";
@@ -584,6 +596,30 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		04CFFF312F54840800BE84B8 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/firebase/firebase-ios-sdk.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 12.10.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		04CFFF322F54840800BE84B8 /* FirebaseAnalytics */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 04CFFF312F54840800BE84B8 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseAnalytics;
+		};
+		04CFFF342F54840800BE84B8 /* FirebaseDatabase */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 04CFFF312F54840800BE84B8 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseDatabase;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 044FF28C2F51542100FAB267 /* Project object */;
 }
