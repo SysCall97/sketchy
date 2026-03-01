@@ -7,6 +7,7 @@ struct HomeView: View {
     @ObservedObject var coordinator: AppCoordinator
     @ObservedObject private var firebaseManager = FirebaseManager.shared
     @State private var templates = TemplateModel.localTemplates
+    @State private var selectedTab: HomeTab = .home
     @State private var isPhotoPickerPresented = false
     @State private var selectedImage: UIImage?
     @State private var isPaywallPresented = false
@@ -17,121 +18,57 @@ struct HomeView: View {
     @State private var pendingTemplate: TemplateModel?
     @State private var pendingImage: UIImage?
 
+    // Favorites state - triggers view update when favorites change
+    @State private var favoritesUpdateTrigger = UUID()
+
+    // MARK: - Tabs
+
+    enum HomeTab: String, CaseIterable {
+        case home = "Home"
+        case favorites = "Favorites"
+    }
+
+    // MARK: - Computed Properties
+
+    private var displayedTemplates: [TemplateModel] {
+        if selectedTab == .home {
+            return templates
+        }
+
+        let favoriteIDs = KeychainManager.shared.loadFavoriteTemplates()
+        var result: [TemplateModel] = []
+
+        for template in templates {
+            let templateID = template.id.uuidString
+            if favoriteIDs.contains(templateID) {
+                result.append(template)
+            }
+        }
+
+        return result
+    }
+
     var body: some View {
         ZStack {
-                ScrollView(showsIndicators: false) {
-                    VStack(spacing: 30) {
-                        // Header
-                        VStack(spacing: 8) {
-
-                            Text("Select a template to start drawing")
-                                .font(.subheadline)
-                                .foregroundColor(.secondary)
-                        }
-                        .padding(.top, shouldShowIndicator() ? 100 : 20)
-
-                        // Template Gallery
-                        LazyVGrid(columns: [
-                            GridItem(.flexible()),
-                            GridItem(.flexible())
-                        ], spacing: 20) {
-                            ForEach(templates) { template in
-                                TemplateThumbnail(template: template)
-                                    .onTapGesture {
-                                        handleTemplateSelection(template)
-                                    }
-                            }
-                        }
-                        .padding()
-
-                        Spacer()
-                            .frame(height: 100)
-                    }
-                }
-
-                // Floating Daily Limit Indicator - positioned under nav bar
-                VStack {
-                    Spacer()
-                        .frame(height: 10) // Account for navigation bar
-
-                    DailyLimitIndicator(
-                        limitManager: DailyLimitManager.shared,
-                        subscriptionManager: coordinator.subscriptionManager,
-                        onTapUpgrade: {
-                            isPaywallPresented = true
-                        }
-                    )
-                    .padding(.horizontal)
-                    .padding(.top, 8)
-                    .padding(.bottom, 4)
-                    .background(.clear)
-
-                    Spacer()
-                }
-
-                // Floating Import from Photos button
-                VStack {
-                    Spacer()
-
-                    Button(action: {
-                        // Request photo library permission before opening picker
-                        Task {
-                            await requestPhotoLibraryPermission()
-                        }
-                    }) {
-                        HStack {
-                            Image(systemName: "photo.on.rectangle.angled")
-                            Text("Import your illustration")
-                        }
-                        .font(.headline)
-                        .foregroundColor(.white)
-                        .frame(maxWidth: .infinity)
-                        .padding()
-                        .background(
-                            LinearGradient(
-                                gradient: Gradient(colors: [Color.blue, Color.purple]),
-                                startPoint: .leading,
-                                endPoint: .trailing
-                            )
-                        )
-                        .cornerRadius(12)
-                        .shadow(radius: 4)
-                    }
-                    .padding(.horizontal)
-                    .padding(.bottom, 20)
-                }
+            scrollViewContent
+            floatingDailyLimitIndicator
+            floatingImportButton
+            bottomTabBar
         }
         .background(Color(.systemGray6))
         .navigationTitle("Sketchy")
         .navigationBarTitleDisplayMode(.large)
         .onAppear {
-            // Start observing Firebase templates
             firebaseManager.observeTemplates()
         }
         .onChange(of: firebaseManager.remoteTemplates) { remoteTemplates in
-            // Update templates when Firebase data changes
             templates = TemplateModel.localTemplates + remoteTemplates
         }
         .sheet(isPresented: $isPhotoPickerPresented) {
             PhotoPickerView(selectedImage: $selectedImage, isPresented: $isPhotoPickerPresented)
         }
         .onChange(of: selectedImage) { newImage in
-            if let image = newImage {
-                // Store pending image and check if we can start drawing
-                pendingImage = image
-
-                if canStartDrawing() {
-                    // Create a template from the selected image and proceed
-                    if let imageData = image.jpegData(compressionQuality: 0.9) {
-                        let template = TemplateModel(name: "Photo", imageData: imageData)
-                        pendingImage = nil
-                        coordinator.goToDrawing(with: template)
-                    }
-                } else {
-                    // Show paywall
-                    isPaywallPresented = true
-                }
-            }
+            handleSelectedImage(newImage)
         }
         .sheet(isPresented: $isPaywallPresented) {
             PaywallView(
@@ -141,7 +78,6 @@ struct HomeView: View {
             )
         }
         .onChange(of: isPaywallPresented) { isPresented in
-            // When paywall dismisses, check if user subscribed
             if !isPresented {
                 handlePaywallDismissal()
             }
@@ -156,7 +92,206 @@ struct HomeView: View {
         }
     }
 
+    // MARK: - View Components
+
+    private var scrollViewContent: some View {
+        ScrollView(showsIndicators: false) {
+            VStack(spacing: 30) {
+                headerSection
+                templateGrid
+                Spacer()
+                    .frame(height: 100)
+            }
+        }
+    }
+
+    private var headerSection: some View {
+        VStack(spacing: 8) {
+            Text("Select a template to start drawing")
+                .font(.subheadline)
+                .foregroundColor(.secondary)
+        }
+        .padding(.top, shouldShowIndicator() ? 100 : 20)
+    }
+
+    private var templateGrid: some View {
+        Group {
+            if displayedTemplates.isEmpty && selectedTab == .favorites {
+                emptyFavoritesState
+            } else {
+                actualTemplateGrid
+            }
+        }
+        .id(favoritesUpdateTrigger) // Refresh grid when favorites change
+    }
+
+    private var actualTemplateGrid: some View {
+        LazyVGrid(columns: [
+            GridItem(.flexible()),
+            GridItem(.flexible())
+        ], spacing: 20) {
+            ForEach(displayedTemplates) { template in
+                TemplateThumbnail(
+                    template: template,
+                    onFavoriteToggle: {
+                        // Trigger view update when favorite status changes
+                        favoritesUpdateTrigger = UUID()
+                    }
+                )
+                .id(template.id.uuidString + selectedTab.rawValue)
+                .onTapGesture {
+                    handleTemplateSelection(template)
+                }
+            }
+        }
+        .padding()
+    }
+
+    private var emptyFavoritesState: some View {
+        VStack(spacing: 20) {
+            Spacer()
+                .frame(height: 60)
+
+            ZStack {
+                Circle()
+                    .fill(Color.blue.opacity(0.1))
+                    .frame(width: 120, height: 120)
+
+                Image(systemName: "star")
+                    .font(.system(size: 50))
+                    .foregroundColor(.blue)
+                    .rotationEffect(.degrees(isRotating ? 15 : 0))
+                    .animation(
+                        Animation.easeInOut(duration: 1.5)
+                            .repeatForever(autoreverses: true),
+                        value: isRotating
+                    )
+            }
+
+            VStack(spacing: 8) {
+                Text("No Favorites Yet")
+                    .font(.headline)
+                    .foregroundColor(.primary)
+
+                Text("Tap the star icon on any template to add it to your favorites")
+                    .font(.subheadline)
+                    .foregroundColor(.secondary)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, 40)
+            }
+
+            Spacer()
+        }
+        .onAppear {
+            isRotating = true
+        }
+    }
+
+    @State private var isRotating = false
+
+    private var floatingDailyLimitIndicator: some View {
+        VStack {
+            Spacer()
+                .frame(height: 10)
+
+            DailyLimitIndicator(
+                limitManager: DailyLimitManager.shared,
+                subscriptionManager: coordinator.subscriptionManager,
+                onTapUpgrade: {
+                    isPaywallPresented = true
+                }
+            )
+            .padding(.horizontal)
+            .padding(.top, 8)
+            .padding(.bottom, 4)
+            .background(.clear)
+
+            Spacer()
+        }
+    }
+
+    private var floatingImportButton: some View {
+        VStack {
+            Spacer()
+
+            Button(action: {
+                Task {
+                    await requestPhotoLibraryPermission()
+                }
+            }) {
+                HStack {
+                    Image(systemName: "photo.on.rectangle.angled")
+                    Text("Import your illustration")
+                }
+                .font(.headline)
+                .foregroundColor(.white)
+                .frame(maxWidth: .infinity)
+                .padding()
+                .background(
+                    LinearGradient(
+                        gradient: Gradient(colors: [Color.blue, Color.purple]),
+                        startPoint: .leading,
+                        endPoint: .trailing
+                    )
+                )
+                .cornerRadius(12)
+                .shadow(radius: 4)
+            }
+            .padding(.horizontal)
+            .padding(.bottom, 60)
+        }
+    }
+
+    private var bottomTabBar: some View {
+        VStack {
+            Spacer()
+
+            HStack(spacing: 0) {
+                ForEach(HomeTab.allCases, id: \.self) { tab in
+                    Button(action: {
+                        withAnimation(.spring(response: 0.3)) {
+                            selectedTab = tab
+                        }
+                    }) {
+                        VStack(spacing: 4) {
+                            Image(systemName: tab == .home ? "house.fill" : "star.fill")
+                                .font(.system(size: 20))
+                            Text(tab.rawValue)
+                                .font(.caption2)
+                        }
+                        .foregroundColor(selectedTab == tab ? .blue : .gray)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 8)
+                    }
+                }
+            }
+            .padding(.horizontal)
+            .padding(.vertical, 12)
+            .background(Color.white)
+            .cornerRadius(12, corners: [.topLeft, .topRight])
+        }
+        .ignoresSafeArea()
+    }
+
     // MARK: - Helper Methods
+
+    // MARK: - Helper Methods
+
+    private func handleSelectedImage(_ newImage: UIImage?) {
+        guard let image = newImage else { return }
+
+        pendingImage = image
+
+        if canStartDrawing() {
+            if let imageData = image.jpegData(compressionQuality: 0.9) {
+                let template = TemplateModel(name: "Photo", imageData: imageData)
+                pendingImage = nil
+                coordinator.goToDrawing(with: template)
+            }
+        } else {
+            isPaywallPresented = true
+        }
+    }
 
     private func shouldShowIndicator() -> Bool {
         let isSubscribed = coordinator.subscriptionManager.isSubscribedOrUnlockedAll()
@@ -249,6 +384,7 @@ struct HomeView: View {
 /// Template thumbnail component
 struct TemplateThumbnail: View {
     let template: TemplateModel
+    var onFavoriteToggle: (() -> Void)? = nil
     @State private var isFavorite: Bool = false
 
     var body: some View {
@@ -284,6 +420,9 @@ struct TemplateThumbnail: View {
         } else {
             KeychainManager.shared.removeFavoriteTemplate(templateID)
         }
+
+        // Notify parent of favorite change
+        onFavoriteToggle?()
     }
 }
 
