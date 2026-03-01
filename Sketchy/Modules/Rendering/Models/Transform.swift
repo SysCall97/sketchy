@@ -3,7 +3,7 @@ import CoreGraphics
 import simd
 
 /// Represents a 2D transform with translation, scale, and rotation
-struct Transform: Equatable {
+struct Transform: Equatable, Codable {
     let translation: CGPoint
     let scale: CGFloat
     let rotation: CGFloat  // Reserved for future use

@@ -45,7 +45,7 @@ struct RootView: View {
                     case .modeSelection(let template):
                         ModeSelectionView(coordinator: coordinator, template: template)
                     case .drawing(let template, let mode):
-                        DrawingView(coordinator: coordinator, template: template, initialMode: mode)
+                        DrawingView(coordinator: coordinator, template: template, initialMode: mode, initialState: nil)
                     case .templateGallery:
                         TemplateGalleryView(coordinator: coordinator)
                     }

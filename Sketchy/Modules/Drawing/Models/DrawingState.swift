@@ -3,17 +3,17 @@ import UIKit
 
 /// Represents the complete state of a drawing session
 struct DrawingState {
-    enum DrawingMode {
+    enum DrawingMode: Codable {
         case abovePaper   // Camera overlay mode
         case underPaper   // Lightbox mode
     }
 
-    enum TransformTarget {
+    enum TransformTarget: Codable {
         case template
         case camera
     }
 
-    enum ControlTab {
+    enum ControlTab: Codable {
         case opacity
         case scaling
         case camera
@@ -21,7 +21,7 @@ struct DrawingState {
         case brightness
     }
 
-    enum CaptureMode {
+    enum CaptureMode: Codable {
         case photo
         case video
     }

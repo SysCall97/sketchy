@@ -16,6 +16,7 @@ class KeychainManager {
         static let service = "com.sketchy.keychain"
         static let dailyLimitData = "dailyLimitData"
         static let favoriteTemplates = "favoriteTemplates"
+        static let hasSavedProject = "hasSavedProject"
     }
 
     // MARK: - Daily Limit Data
@@ -220,5 +221,52 @@ class KeychainManager {
 
         SecItemDelete(query as CFDictionary)
         print("KeychainManager: All data reset")
+    }
+
+    // MARK: - Project Limit Tracking
+
+    /// Check if free user has saved a project
+    func hasSavedProject() -> Bool {
+        let query: [String: Any] = [
+            kSecClass as String: kSecClassGenericPassword,
+            kSecAttrService as String: Keys.service,
+            kSecAttrAccount as String: Keys.hasSavedProject,
+            kSecReturnData as String: true,
+            kSecMatchLimit as String: kSecMatchLimitOne
+        ]
+
+        var result: AnyObject?
+        let status = SecItemCopyMatching(query as CFDictionary, &result)
+
+        if status == errSecSuccess, let data = result as? Data,
+           let hasSaved = String(data: data, encoding: .utf8),
+           hasSaved == "true" {
+            return true
+        }
+        return false
+    }
+
+    /// Set whether free user has saved a project
+    func setHasSavedProject(_ hasSaved: Bool) {
+        let value = hasSaved ? "true" : "false"
+        guard let valueData = value.data(using: .utf8) else { return }
+
+        let query: [String: Any] = [
+            kSecClass as String: kSecClassGenericPassword,
+            kSecAttrService as String: Keys.service,
+            kSecAttrAccount as String: Keys.hasSavedProject,
+            kSecValueData as String: valueData
+        ]
+
+        SecItemDelete(query as CFDictionary)
+        SecItemAdd(query as CFDictionary, nil)
+        print("KeychainManager: Has saved project set to \(hasSaved)")
+    }
+
+    /// Check if user is premium (for project limits)
+    func isPremiumUser() -> Bool {
+        // This will be used to check subscription status
+        // For now, return false - will be integrated with SubscriptionManager
+        return false
     }
 }

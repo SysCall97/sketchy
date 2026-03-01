@@ -10,37 +10,46 @@ struct DrawingView: View {
     @StateObject private var cameraService: CameraService
     @State private var gestureHandler = TransformGestureHandler()
     @State private var isUIVisible = true
+    @State private var showSaveAlert = false
+    @State private var showPaywall = false
 
-    init(coordinator: AppCoordinator, template: TemplateModel, initialMode: DrawingState.DrawingMode = .abovePaper) {
+    init(coordinator: AppCoordinator, template: TemplateModel, initialMode: DrawingState.DrawingMode = .abovePaper, initialState: DrawingState? = nil) {
         self.coordinator = coordinator
         self.template = template
 
         // Create shared camera service
         let sharedCameraService = CameraService()
 
-        // Get current device brightness
-        let deviceBrightness = Double(UIScreen.main.brightness)
+        // Use provided state, pending state, or create default
+        let state: DrawingState
+        if let providedState = initialState {
+            state = providedState
+        } else if let pendingState = coordinator.pendingProjectState {
+            state = pendingState
+        } else {
+            // Get current device brightness
+            let deviceBrightness = Double(UIScreen.main.brightness)
 
-        // Create view model with shared camera service
-        let initialState = DrawingState(
-            mode: initialMode,
-            templateTransform: .identity,
-            cameraTransform: .identity,
-            opacity: 0.5,
-            brightness: deviceBrightness,
-            isFlashlightOn: false,
-            transformTarget: .template,
-            isTransformLocked: false,
-            selectedTab: .opacity,
-            captureMode: .photo,
-            isRecording: false,
-            isFlashlightAvailable: true
-        )
+            state = DrawingState(
+                mode: initialMode,
+                templateTransform: .identity,
+                cameraTransform: .identity,
+                opacity: 0.5,
+                brightness: deviceBrightness,
+                isFlashlightOn: false,
+                transformTarget: .template,
+                isTransformLocked: false,
+                selectedTab: .opacity,
+                captureMode: .photo,
+                isRecording: false,
+                isFlashlightAvailable: true
+            )
+        }
 
         self._cameraService = StateObject(wrappedValue: sharedCameraService)
         self._viewModel = StateObject(wrappedValue: DrawingViewModel(
             template: template,
-            initialState: initialState,
+            initialState: state,
             cameraService: sharedCameraService
         ))
     }
@@ -251,7 +260,7 @@ struct DrawingView: View {
                 // Top: Back button
                 HStack {
                     Button(action: {
-                        coordinator.goBack()
+                        showSaveAlert = true
                     }) {
                         Image(systemName: "chevron.left")
                             .foregroundColor(.white)
@@ -298,6 +307,49 @@ struct DrawingView: View {
                 } else {
                     cameraService.stopSession()
                 }
+            }
+        }
+        .overlay {
+            if showSaveAlert {
+                ProjectSaveAlertView(
+                    isPresented: $showSaveAlert,
+                    templateID: template.id,
+                    currentState: viewModel.state
+                ) { projectName in
+                    handleSaveProject(name: projectName)
+                } onExit: {
+                    coordinator.goBack()
+                }
+            }
+        }
+        .sheet(isPresented: $showPaywall) {
+            PaywallView(
+                isPresented: $showPaywall,
+                subscriptionManager: coordinator.subscriptionManager,
+                productID: "com.sketchy.subscription.weekly"
+            )
+        }
+    }
+
+    // MARK: - Project Management
+
+    private func handleSaveProject(name: String) {
+        let isPremium = coordinator.subscriptionManager.isSubscribedOrUnlockedAll()
+        let project = ProjectModel.from(
+            name: name,
+            templateID: template.id,
+            state: viewModel.state
+        )
+
+        let success = ProjectManager.shared.addProject(project, isPremium: isPremium)
+
+        if success {
+            // Project saved successfully
+            coordinator.goBack()
+        } else {
+            // Limit reached, show alert after delay
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                showPaywall = true
             }
         }
     }

@@ -26,6 +26,7 @@ struct HomeView: View {
     enum HomeTab: String, CaseIterable {
         case home = "Home"
         case favorites = "Favorites"
+        case projects = "Projects"
     }
 
     // MARK: - Computed Properties
@@ -116,7 +117,9 @@ struct HomeView: View {
 
     private var templateGrid: some View {
         Group {
-            if displayedTemplates.isEmpty && selectedTab == .favorites {
+            if selectedTab == .projects {
+                ProjectsListView(coordinator: coordinator)
+            } else if displayedTemplates.isEmpty && selectedTab == .favorites {
                 emptyFavoritesState
             } else {
                 actualTemplateGrid
@@ -254,7 +257,7 @@ struct HomeView: View {
                         }
                     }) {
                         VStack(spacing: 4) {
-                            Image(systemName: tab == .home ? "house.fill" : "star.fill")
+                            Image(systemName: iconName(for: tab))
                                 .font(.system(size: 20))
                             Text(tab.rawValue)
                                 .font(.caption2)
@@ -271,6 +274,17 @@ struct HomeView: View {
             .cornerRadius(12, corners: [.topLeft, .topRight])
         }
         .ignoresSafeArea()
+    }
+
+    private func iconName(for tab: HomeTab) -> String {
+        switch tab {
+        case .home:
+            return "house.fill"
+        case .favorites:
+            return "star.fill"
+        case .projects:
+            return "folder.fill"
+        }
     }
 
     // MARK: - Helper Methods

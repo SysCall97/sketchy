@@ -7,6 +7,9 @@ class AppCoordinator: Coordinatable {
     // Navigation path for proper push/pop animations
     @Published var navigationPath = NavigationPath()
 
+    // Pending project state for loading saved projects
+    @Published var pendingProjectState: DrawingState?
+
     // MARK: - Services
 
     let subscriptionManager = SubscriptionManager()
@@ -39,7 +42,14 @@ class AppCoordinator: Coordinatable {
 
     /// Navigate to drawing screen with a template and mode
     func goToDrawing(with template: TemplateModel, mode: DrawingState.DrawingMode) {
+        pendingProjectState = nil
         navigate(to: .drawing(template: template, mode: mode))
+    }
+
+    /// Navigate to drawing screen with a template and initial state (for loading projects)
+    func goToDrawing(with template: TemplateModel, initialState: DrawingState) {
+        pendingProjectState = initialState
+        navigate(to: .drawing(template: template, mode: initialState.mode))
     }
 
     /// Navigate to template gallery
@@ -52,6 +62,7 @@ class AppCoordinator: Coordinatable {
         if !navigationPath.isEmpty {
             navigationPath.removeLast()
         }
+        pendingProjectState = nil
     }
 
     // MARK: - Coordinator Lifecycle
