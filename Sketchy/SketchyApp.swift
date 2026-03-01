@@ -23,22 +23,10 @@ class AppDelegate: NSObject, UIApplicationDelegate {
 struct SketchyApp: App {
     @UIApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
     @StateObject private var appCoordinator = AppCoordinator()
-    @State private var showSplash = true
 
     var body: some Scene {
         WindowGroup {
-            ZStack {
-                if showSplash {
-                    SplashView {
-                        withAnimation(.easeInOut(duration: 0.5)) {
-                            showSplash = false
-                        }
-                    }
-                    .transition(.move(edge: .leading))
-                } else {
-                    RootView(coordinator: appCoordinator)
-                }
-            }
+            RootView(coordinator: appCoordinator)
         }
     }
 }
@@ -63,5 +51,6 @@ struct RootView: View {
                     }
                 }
         }
+        .id(coordinator.showSplash ? "splash" : "main")
     }
 }

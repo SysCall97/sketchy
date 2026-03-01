@@ -2,13 +2,13 @@ import SwiftUI
 
 /// Splash screen with drawing layers animation
 struct SplashView: View {
-    let onComplete: () -> Void
+    @ObservedObject var coordinator: AppCoordinator
 
     var body: some View {
         ZStack {
             // Drawing layers animation
             DrawingLayersAnimation {
-                onComplete()
+                coordinator.completeSplash()
             }
             .frame(width: 260, height: 260)
         }
@@ -17,7 +17,5 @@ struct SplashView: View {
 
 /// Preview
 #Preview {
-    SplashView {
-        print("Splash complete")
-    }
+    SplashView(coordinator: AppCoordinator())
 }

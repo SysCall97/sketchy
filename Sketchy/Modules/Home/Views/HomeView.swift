@@ -59,6 +59,7 @@ struct HomeView: View {
         .background(Color(.systemGray6))
         .navigationTitle("Sketchy")
         .navigationBarTitleDisplayMode(.large)
+        .navigationBarBackButtonHidden(true)
         .onAppear {
             firebaseManager.observeTemplates()
         }

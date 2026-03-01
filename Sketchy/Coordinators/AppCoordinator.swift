@@ -7,6 +7,9 @@ class AppCoordinator: Coordinatable {
     // Navigation path for proper push/pop animations
     @Published var navigationPath = NavigationPath()
 
+    // Splash screen state
+    @Published var showSplash = true
+
     // Pending project state for loading saved projects
     @Published var pendingProjectState: DrawingState?
 
@@ -15,7 +18,15 @@ class AppCoordinator: Coordinatable {
     let subscriptionManager = SubscriptionManager()
 
     var rootView: AnyView {
-        AnyView(HomeView(coordinator: self))
+        AnyView(
+            Group {
+                if showSplash {
+                    SplashView(coordinator: self)
+                } else {
+                    HomeView(coordinator: self)
+                }
+            }
+        )
     }
 
     // MARK: - Navigation
@@ -28,6 +39,18 @@ class AppCoordinator: Coordinatable {
     /// Navigate to home screen
     func goToHome() {
         navigationPath.removeLast(navigationPath.count)
+    }
+
+    /// Complete splash screen and navigate to home
+    func completeSplash() {
+        // Push home view with navigation animation
+        navigate(to: .home)
+
+        // After push completes, clear path and switch root to home
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+            self.navigationPath = NavigationPath()
+            self.showSplash = false
+        }
     }
 
     /// Navigate to drawing screen with a template (routes through mode selection)
