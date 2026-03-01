@@ -291,8 +291,11 @@ struct DrawingView: View {
             isUIVisible.toggle()
         }
         .task {
-            // Record the drawing session (uses daily free drawing)
-            DailyLimitManager.shared.recordDrawingSession()
+            // Record the drawing session only for free users
+            // Premium users' sessions are not tracked so they have full limit when subscription ends
+            if !coordinator.subscriptionManager.isSubscribedOrUnlockedAll() {
+                DailyLimitManager.shared.recordDrawingSession()
+            }
 
             await viewModel.startDrawing()
         }
