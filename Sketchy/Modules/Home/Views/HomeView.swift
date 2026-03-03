@@ -222,7 +222,7 @@ struct HomeView: View {
             HStack {
                 Spacer()
 
-                PromoFloatingButton()
+                PromoFloatingButton(isPaywallPresented: $isPaywallPresented)
                     .padding(.trailing, 16)
                     .padding(.bottom, 150)
             }

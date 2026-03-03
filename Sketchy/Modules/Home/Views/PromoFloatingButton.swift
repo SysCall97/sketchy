@@ -18,6 +18,9 @@ struct PromoFloatingButton: View {
     @State private var appLaunchDate: Date?
     @State private var hasLoadedDate = false
 
+    // MARK: - Bindings
+    @Binding var isPaywallPresented: Bool
+
     // MARK: - Dependencies
     private let keychainManager = KeychainManager.shared
     private let timeInterval: TimeInterval = 24 * 60 * 60 // 24 hours in seconds
@@ -44,51 +47,56 @@ struct PromoFloatingButton: View {
     // MARK: - Body
     var body: some View {
         if shouldShowButton {
-            VStack(spacing: 4) {
-                // Animated icon container
-                ZStack {
-                    // Cat card (bottom layer) - smaller scale from animation
-                    Image("cat_card")
-                        .resizable()
-                        .scaledToFit()
-                        .frame(width: 45, height: 45)
-                        .shadow(radius: 2)
+            Button(action: {
+                isPaywallPresented = true
+            }) {
+                VStack(spacing: 4) {
+                    // Animated icon container
+                    ZStack {
+                        // Cat card (bottom layer) - smaller scale from animation
+                        Image("cat_card")
+                            .resizable()
+                            .scaledToFit()
+                            .frame(width: 45, height: 45)
+                            .shadow(radius: 2)
 
-                    // Pencil (top layer) - with angle and offset from animation, smaller scale
-                    Image("pencil")
-                        .resizable()
-                        .scaledToFit()
-                        .frame(width: 25, height: 25)
-                        .rotationEffect(.degrees(10))
-                        .offset(x: 12, y: 0)
-                        .shadow(radius: 1)
-                }
-                .frame(width: 60, height: 60)
-                .background(
-                    Circle()
-                        .fill(
-                            LinearGradient(
-                                gradient: Gradient(colors: [Color.blue.opacity(0.85), Color.purple.opacity(0.85)]),
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            )
-                        )
-                        .shadow(color: Color.blue.opacity(0.4), radius: 10, x: 0, y: 5)
-                )
-                .scaleEffect(isAnimating ? 1.08 : 1.0)
-                .offset(y: floatOffset)
-
-                Text(timeRemainingString)
-                    .font(.system(size: 10, weight: .bold, design: .rounded))
-                    .foregroundColor(.white)
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 3)
+                        // Pencil (top layer) - with angle and offset from animation, smaller scale
+                        Image("pencil")
+                            .resizable()
+                            .scaledToFit()
+                            .frame(width: 25, height: 25)
+                            .rotationEffect(.degrees(10))
+                            .offset(x: 12, y: 0)
+                            .shadow(radius: 1)
+                    }
+                    .frame(width: 60, height: 60)
                     .background(
-                        Capsule()
-                            .fill(Color.black.opacity(0.7))
-                            .shadow(color: Color.black.opacity(0.3), radius: 2, x: 0, y: 1)
+                        Circle()
+                            .fill(
+                                LinearGradient(
+                                    gradient: Gradient(colors: [Color.blue.opacity(0.85), Color.purple.opacity(0.85)]),
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
+                                )
+                            )
+                            .shadow(color: Color.blue.opacity(0.4), radius: 10, x: 0, y: 5)
                     )
+                    .scaleEffect(isAnimating ? 1.08 : 1.0)
+                    .offset(y: floatOffset)
+
+                    Text(timeRemainingString)
+                        .font(.system(size: 10, weight: .bold, design: .rounded))
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 3)
+                        .background(
+                            Capsule()
+                                .fill(Color.black.opacity(0.7))
+                                .shadow(color: Color.black.opacity(0.3), radius: 2, x: 0, y: 1)
+                        )
+                }
             }
+            .buttonStyle(PlainButtonStyle())
             .task {
                 // Load launch date only once
                 if !hasLoadedDate {
