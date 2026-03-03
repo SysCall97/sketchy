@@ -42,7 +42,7 @@ struct PaywallView: View {
                         BenefitRow(icon: "infinity", title: "Unlimited project savings every day")
 //                        BenefitRow(icon: "photo.on.rectangle.angled", title: "Full access to all templates")
 //                        BenefitRow(icon: "camera", title: "Both camera & lightbox modes")
-                        BenefitRow(icon: "sparkles", title: "All future features included")
+                        BenefitRow(icon: "sparkles", title: "Support indie dev for future features and improvements")
                     }
                     .padding(.horizontal, 16)
                     .padding(.vertical, 12)
