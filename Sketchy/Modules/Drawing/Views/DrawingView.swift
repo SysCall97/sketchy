@@ -61,13 +61,13 @@ struct DrawingView: View {
                 if viewModel.state.mode == .abovePaper {
                     ZStack {
                         CameraView(cameraService: cameraService)
+                            .position(x: geometry.size.width / 2, y: geometry.size.height / 2)
                             .scaleEffect(viewModel.state.cameraTransform.scale)
                             .rotationEffect(Angle(radians: viewModel.state.cameraTransform.rotation))
                             .offset(
                                 x: viewModel.state.cameraTransform.translation.x,
                                 y: viewModel.state.cameraTransform.translation.y
                             )
-                            .position(x: geometry.size.width / 2, y: geometry.size.height / 2)
 
                         // Lock button for camera transform
                         if viewModel.state.transformTarget == .camera {
@@ -196,13 +196,13 @@ struct DrawingView: View {
                             }
                         )
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        .position(x: geometry.size.width / 2, y: geometry.size.height / 2)
                         .scaleEffect(viewModel.state.templateTransform.scale)
                         .rotationEffect(Angle(radians: viewModel.state.templateTransform.rotation))
                         .offset(
                             x: viewModel.state.templateTransform.translation.x,
                             y: viewModel.state.templateTransform.translation.y
                         )
-                        .position(x: geometry.size.width / 2, y: geometry.size.height / 2)
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .gesture(
