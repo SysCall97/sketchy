@@ -217,14 +217,15 @@ struct HomeView: View {
 
     private var floatingPromoButton: some View {
         VStack {
-            Spacer()
-
-            HStack {
+            if !coordinator.subscriptionManager.isSubscribedOrUnlockedAll() {
                 Spacer()
-
-                PromoFloatingButton(isPaywallPresented: $isPaywallPresented)
-                    .padding(.trailing, 16)
-                    .padding(.bottom, 150)
+                
+                HStack {
+                    Spacer()
+                    PromoFloatingButton(isPaywallPresented: $isPaywallPresented)
+                        .padding(.trailing, 16)
+                        .padding(.bottom, 150)
+                }
             }
         }
     }
