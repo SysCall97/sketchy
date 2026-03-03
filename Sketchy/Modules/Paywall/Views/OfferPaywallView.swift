@@ -90,9 +90,9 @@ struct OfferPaywallView: View {
 
                     // MARK: - Feature Section
                     VStack(alignment: .leading, spacing: 12) {
-                        FeatureRow(icon: "checkmark.circle.fill", title: "Unlimited drawings")
-                        FeatureRow(icon: "checkmark.circle.fill", title: "All templates unlocked")
-                        FeatureRow(icon: "checkmark.circle.fill", title: "All future features included")
+                        BenefitRow(icon: "checkmark.circle.fill", title: "Unlimited drawings every day")
+                        BenefitRow(icon: "checkmark.circle.fill", title: "Unlimited project savings every day")
+                        BenefitRow(icon: "checkmark.circle.fill", title: "Support indie dev for future improvements")
                     }
                     .padding(.horizontal, 16)
                     .padding(.vertical, 12)
@@ -247,27 +247,6 @@ struct OfferPaywallView: View {
 
     private func handleRestore() {
         subscriptionManager.restorePurchase()
-    }
-}
-
-/// Feature row component with checkmark
-struct FeatureRow: View {
-    let icon: String
-    let title: String
-
-    var body: some View {
-        HStack(spacing: 10) {
-            Image(systemName: icon)
-                .font(.body)
-                .foregroundColor(.blue)
-                .frame(width: 22)
-
-            Text(title)
-                .font(.subheadline)
-                .foregroundColor(.primary)
-
-            Spacer()
-        }
     }
 }
 

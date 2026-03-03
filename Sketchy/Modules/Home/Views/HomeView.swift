@@ -62,6 +62,19 @@ struct HomeView: View {
         .navigationTitle("Sketchy")
         .navigationBarTitleDisplayMode(.large)
         .navigationBarBackButtonHidden(true)
+        .toolbar {
+            if !coordinator.subscriptionManager.isSubscribedOrUnlockedAll() {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button(action: {
+                        isPaywallPresented = true
+                    }) {
+                        Image(systemName: "crown.fill")
+                            .foregroundColor(.yellow)
+                            .font(.body)
+                    }
+                }
+            }
+        }
         .onAppear {
             firebaseManager.observeTemplates()
         }
