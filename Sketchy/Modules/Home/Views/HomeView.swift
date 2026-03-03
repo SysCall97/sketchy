@@ -11,6 +11,7 @@ struct HomeView: View {
     @State private var isPhotoPickerPresented = false
     @State private var selectedImage: UIImage?
     @State private var isPaywallPresented = false
+    @State private var isOfferPaywallPresented = false
     @State private var showPermissionAlert = false
     @State private var permissionDeniedMessage = ""
 
@@ -80,7 +81,18 @@ struct HomeView: View {
                 productID: "com.sketchy.subscription.weekly"
             )
         }
+        .sheet(isPresented: $isOfferPaywallPresented) {
+            OfferPaywallView(
+                isPresented: $isOfferPaywallPresented,
+                subscriptionManager: coordinator.subscriptionManager
+            )
+        }
         .onChange(of: isPaywallPresented) { isPresented in
+            if !isPresented {
+                handlePaywallDismissal()
+            }
+        }
+        .onChange(of: isOfferPaywallPresented) { isPresented in
             if !isPresented {
                 handlePaywallDismissal()
             }
@@ -219,10 +231,10 @@ struct HomeView: View {
         VStack {
             if !coordinator.subscriptionManager.isSubscribedOrUnlockedAll() {
                 Spacer()
-                
+
                 HStack {
                     Spacer()
-                    PromoFloatingButton(isPaywallPresented: $isPaywallPresented)
+                    PromoFloatingButton(isPaywallPresented: $isOfferPaywallPresented)
                         .padding(.trailing, 16)
                         .padding(.bottom, 150)
                 }
