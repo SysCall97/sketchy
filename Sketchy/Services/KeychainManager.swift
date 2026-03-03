@@ -17,6 +17,7 @@ class KeychainManager {
         static let dailyLimitData = "dailyLimitData"
         static let favoriteTemplates = "favoriteTemplates"
         static let hasSavedProject = "hasSavedProject"
+        static let appLaunchDate = "appLaunchDate"
     }
 
     // MARK: - Daily Limit Data
@@ -268,5 +269,60 @@ class KeychainManager {
         // This will be used to check subscription status
         // For now, return false - will be integrated with SubscriptionManager
         return false
+    }
+
+    // MARK: - App Launch Date
+
+    /// Gets or creates the app first launch date
+    func getAppLaunchDate() -> Date {
+        let query: [String: Any] = [
+            kSecClass as String: kSecClassGenericPassword,
+            kSecAttrService as String: Keys.service,
+            kSecAttrAccount as String: Keys.appLaunchDate,
+            kSecReturnData as String: true,
+            kSecMatchLimit as String: kSecMatchLimitOne
+        ]
+
+        var result: AnyObject?
+        let status = SecItemCopyMatching(query as CFDictionary, &result)
+
+        if status == errSecSuccess, let data = result as? Data,
+           let timestamp = Double(String(data: data, encoding: .utf8) ?? "0") {
+            let launchDate = Date(timeIntervalSince1970: timestamp)
+            print("KeychainManager: Found existing launch date: \(launchDate)")
+            return launchDate
+        }
+
+        // No launch date found, create one
+        let launchDate = Date()
+        print("KeychainManager: Creating new launch date: \(launchDate)")
+        saveAppLaunchDate(launchDate)
+        return launchDate
+    }
+
+    /// Saves the app launch date
+    private func saveAppLaunchDate(_ date: Date) {
+        let timestamp = String(date.timeIntervalSince1970)
+        guard let timestampData = timestamp.data(using: .utf8) else { return }
+
+        let query: [String: Any] = [
+            kSecClass as String: kSecClassGenericPassword,
+            kSecAttrService as String: Keys.service,
+            kSecAttrAccount as String: Keys.appLaunchDate,
+            kSecValueData as String: timestampData
+        ]
+
+        SecItemDelete(query as CFDictionary)
+        SecItemAdd(query as CFDictionary, nil)
+        print("KeychainManager: App launch date saved")
+    }
+
+    /// Checks if promotional button should be shown (less than 24 hours since first launch)
+    func shouldShowPromoButton() -> Bool {
+        let launchDate = getAppLaunchDate()
+        let hoursPassed = Date().timeIntervalSince(launchDate) / 3600
+        let shouldShow = hoursPassed < 24
+        print("KeychainManager: Hours passed since launch = \(hoursPassed), should show = \(shouldShow)")
+        return shouldShow
     }
 }

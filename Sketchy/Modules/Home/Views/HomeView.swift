@@ -55,6 +55,7 @@ struct HomeView: View {
             floatingDailyLimitIndicator
             floatingImportButton
             bottomTabBar
+            floatingPromoButton  // Moved to top so it's not covered
         }
         .background(Color(.systemGray6))
         .navigationTitle("Sketchy")
@@ -211,6 +212,20 @@ struct HomeView: View {
             .background(.clear)
 
             Spacer()
+        }
+    }
+
+    private var floatingPromoButton: some View {
+        VStack {
+            Spacer()
+
+            HStack {
+                Spacer()
+
+                PromoFloatingButton()
+                    .padding(.trailing, 16)
+                    .padding(.bottom, 150)
+            }
         }
     }
 
