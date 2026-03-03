@@ -176,6 +176,67 @@ extension FeatureState: Equatable {
 
 ---
 
+## Promotional System
+
+### 24-Hour Early Supporter Offer
+Special pricing offer for new users within first 24 hours:
+
+```swift
+// Show promo button (only visible first 24h)
+if !coordinator.subscriptionManager.isSubscribedOrUn_unlockedAll() {
+    PromoFloatingButton(isPaywallPresented: $isOfferPaywallPresented)
+}
+
+// Show crown icon in nav bar (free users only)
+.toolbar {
+    if !coordinator.subscriptionManager.isSubscribedOrUnlockedAll() {
+        ToolbarItem(placement: .navigationBarTrailing) {
+            Button(action: { isPaywallPresented = true }) {
+                Image(systemName: "crown.fill")
+                    .foregroundColor(.yellow)
+            }
+        }
+    }
+}
+```
+
+### Paywall Views
+
+**Regular Paywall** (Weekly subscription)
+```swift
+PaywallView(
+    isPresented: $isPaywallPresented,
+    subscriptionManager: coordinator.subscriptionManager,
+    productID: "com.sketchy.subscription.weekly"
+)
+```
+
+**Offer Paywall** (Yearly early supporter)
+```swift
+OfferPaywallView(
+    isPresented: $isOfferPaywallPresented,
+    subscriptionManager: coordinator.subscriptionManager
+)
+```
+
+### App Launch Date Tracking
+```swift
+// Get or create launch date (stored in Keychain)
+let launchDate = KeychainManager.shared.getAppLaunchDate()
+
+// Check if promo should still show
+let shouldShow = KeychainManager.shared.shouldShowPromoButton()
+
+// Calculate elapsed time
+let hoursPassed = Date().timeIntervalSince(launchDate) / 3600
+```
+
+### Product IDs
+- Weekly: `com.sketchy.subscription.weekly`
+- Yearly: `com.sketchy.subscription.yearly` (early supporter pricing)
+
+---
+
 ## Common UI Components
 
 ### Button with Styling
@@ -271,6 +332,13 @@ autoLockService.disableAutoLock()  // Keep screen on
 autoLockService.enableAutoLock()
 ```
 
+### Keychain - App Launch Date
+```swift
+let keychainManager = KeychainManager.shared
+keychainManager.getAppLaunchDate()      // Gets/creates first launch date
+keychainManager.shouldShowPromoButton()  // Returns true if < 24h elapsed
+```
+
 ---
 
 ## Module Structure Template
@@ -283,6 +351,20 @@ Modules/NewFeature/
 │   └── NewFeatureViewModel.swift      # State & logic
 └── Models/
     └── NewFeatureState.swift          # State definition
+```
+
+## Recent Additions
+
+### Promotional Button
+```
+Modules/Home/Views/
+└── PromoFloatingButton.swift         # 24h countdown button
+```
+
+### Offer Paywall
+```
+Modules/Paywall/Views/
+└── OfferPaywallView.swift            # Early supporter paywall
 ```
 
 ---

@@ -14,6 +14,8 @@
 - Screen brightness control for lightbox mode
 - Flashlight integration for enhanced tracing
 - Subscription-based access with daily usage limits
+- **Early Supporter Offer** - 24-hour promotional pricing for new users
+- **Promotional floating button** - Countdown timer with special offer access
 - Metal-accelerated rendering for smooth performance
 
 ---
@@ -71,7 +73,8 @@ Sketchy/
 ├── Modules/
 │   ├── Home/                          # Template selection screen
 │   │   ├── Views/
-│   │   │   └── HomeView.swift
+│   │   │   ├── HomeView.swift
+│   │   │   └── PromoFloatingButton.swift  # 24h countdown button
 │   │   ├── Models/
 │   │   │   └── TemplateModel.swift
 │   │   └── Utils/
@@ -119,6 +122,7 @@ Sketchy/
 │   └── Paywall/                       # Subscription system
 │       ├── Views/
 │       │   ├── PaywallView.swift
+│       │   ├── OfferPaywallView.swift    # Early supporter offer with 24h countdown
 │       │   └── DailyLimitIndicator.swift
 │       └── Services/
 │           └── DailyLimitManager.swift
@@ -615,6 +619,47 @@ Before committing changes, verify:
 - StoreKit - In-app purchases
 
 **No Third-Party Dependencies** - All code is custom-built for maximum control and performance.
+
+---
+
+## Promotional System
+
+### 24-Hour Early Supporter Offer
+The app includes a time-limited promotional offer for new users:
+
+**Features:**
+- **PromoFloatingButton** - Floating button on home screen with countdown timer
+  - Shows for 24 hours from first app launch
+  - Displays animated cat card and pencil icons
+  - Positioned on trailing edge, 30px above import button
+  - Floating animation to grab attention
+
+- **OfferPaywallView** - Special paywall for early supporters
+  - 24-hour countdown timer synchronized with app launch date
+  - Yearly subscription at $25/year (special pricing)
+  - Feature highlights and emotional appeal
+  - More compact layout than regular paywall
+
+- **Navigation Crown Icon** - Premium access indicator
+  - Yellow crown icon in navigation bar (trailing edge)
+  - Only visible for free users
+  - Opens regular weekly paywall on tap
+
+**Technical Implementation:**
+```swift
+// KeychainManager methods
+keychainManager.getAppLaunchDate()      // Gets/creates first launch date
+keychainManager.shouldShowPromoButton()  // Checks if < 24 hours elapsed
+```
+
+**State Storage:**
+- App launch date stored securely in Keychain
+- Persists across app reinstalls
+- Used for both floating button and offer paywall countdown
+
+**Product IDs:**
+- Weekly: `com.sketchy.subscription.weekly` ($0.99 first week, then $3.99/week)
+- Yearly: `com.sketchy.subscription.yearly` ($25/year for early supporters)
 
 ---
 
