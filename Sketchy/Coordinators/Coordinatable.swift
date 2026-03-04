@@ -15,4 +15,6 @@ enum CoordinatorRoute: Hashable {
     case modeSelection(template: TemplateModel)
     case drawing(template: TemplateModel, mode: DrawingState.DrawingMode)
     case templateGallery
+    case colorbook
+    case colorbookDrawing(coloringPage: TemplateModel)
 }

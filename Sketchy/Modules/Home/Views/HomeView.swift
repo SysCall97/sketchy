@@ -297,7 +297,14 @@ struct HomeView: View {
                         }
                         
                         Button(action: {
-                            withAnimation(.spring(response: 0.3)) { selectedTab = tab }
+                            withAnimation(.spring(response: 0.3)) {
+                                if tab == .colorbook {
+                                    // Navigate to colorbook view
+                                    coordinator.goToColorbook()
+                                } else {
+                                    selectedTab = tab
+                                }
+                            }
                         }) {
                             VStack(spacing: 4) {
                                 Image(systemName: tab.iconName())

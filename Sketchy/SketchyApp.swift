@@ -48,6 +48,10 @@ struct RootView: View {
                         DrawingView(coordinator: coordinator, template: template, initialMode: mode, initialState: nil)
                     case .templateGallery:
                         TemplateGalleryView(coordinator: coordinator)
+                    case .colorbook:
+                        ColorbookView(coordinator: coordinator)
+                    case .colorbookDrawing(let coloringPage):
+                        ColorBookDrawingView(coordinator: coordinator, coloringPage: coloringPage)
                     }
                 }
         }

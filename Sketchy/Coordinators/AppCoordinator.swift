@@ -80,6 +80,16 @@ class AppCoordinator: Coordinatable {
         navigate(to: .templateGallery)
     }
 
+    /// Navigate to colorbook gallery
+    func goToColorbook() {
+        navigate(to: .colorbook)
+    }
+
+    /// Navigate to colorbook drawing screen with a coloring page
+    func goToColorbookDrawing(with coloringPage: TemplateModel) {
+        navigate(to: .colorbookDrawing(coloringPage: coloringPage))
+    }
+
     /// Go back to previous screen
     func goBack() {
         if !navigationPath.isEmpty {
