@@ -17,7 +17,8 @@ struct ProjectSaveAlertView: View {
             Color.black.opacity(0.4)
                 .ignoresSafeArea()
                 .onTapGesture {
-                    // Don't dismiss on tap - must choose Save or Exit
+                    // Dismiss alert when tapping outside
+                    isPresented = false
                 }
 
             // Alert content
