@@ -8,9 +8,10 @@ struct ColorBookDrawingView: View {
     let coloringPage: TemplateModel
 
     @StateObject private var viewModel: ColorbookViewModel
-    @State private var coloringImage: UIImage?
     @State private var imageSize: CGSize = .zero
     @State private var imagePosition: CGRect = .zero
+    @State private var gestureHandler = TransformGestureHandler()
+    @State private var lastScale: CGFloat = 1.0
 
     init(coordinator: AppCoordinator, coloringPage: TemplateModel) {
         self.coordinator = coordinator
@@ -26,7 +27,7 @@ struct ColorBookDrawingView: View {
 
             // Coloring page with transforms
             GeometryReader { geometry in
-                if let image = coloringImage {
+                if let image = viewModel.currentImage {
                     Image(uiImage: image)
                         .resizable()
                         .aspectRatio(contentMode: .fit)
@@ -68,10 +69,40 @@ struct ColorBookDrawingView: View {
                                     }
                             }
                         )
-                        .simultaneousGesture(
+                        .gesture(
                             DragGesture(minimumDistance: 0)
                                 .onEnded { value in
-                                    handleTap(at: value.location, in: geometry.size)
+                                    // Only handle as tap if there was minimal movement
+                                    let translation = abs(value.translation.width) + abs(value.translation.height)
+                                    if translation < 5 {
+                                        handleTap(at: value.location, in: geometry.size)
+                                    }
+                                }
+                        )
+                        .simultaneousGesture(
+                            DragGesture()
+                                .onChanged { value in
+                                    let newTransform = gestureHandler.handleDrag(value, current: viewModel.state.pageTransform)
+                                    viewModel.updatePageTransform(newTransform)
+                                }
+                                .onEnded { _ in
+                                    gestureHandler.handleDragEnded()
+                                }
+                        )
+                        .simultaneousGesture(
+                            MagnificationGesture()
+                                .onChanged { value in
+                                    let newTransform = gestureHandler.handlePinch(value, current: viewModel.state.pageTransform)
+                                    viewModel.updatePageTransform(newTransform)
+                                }
+                                .onEnded { _ in
+                                    gestureHandler.handlePinchEnded()
+                                }
+                        )
+                        .simultaneousGesture(
+                            TapGesture(count: 2)
+                                .onEnded {
+                                    viewModel.resetTransform()
                                 }
                         )
                 } else {
@@ -180,17 +211,17 @@ struct ColorBookDrawingView: View {
     private func loadImage() {
         // Load image from template
         if let localImage = coloringPage.image {
-            coloringImage = localImage
+            viewModel.currentImage = localImage
         } else if let remoteURL = coloringPage.remoteURL {
             // Load from cache or URL
             if let cachedImage = ImageCache.shared.getImage(for: remoteURL) {
-                coloringImage = cachedImage
+                viewModel.currentImage = cachedImage
             } else {
                 Task {
                     do {
                         let image = try await ImageCache.shared.loadImage(from: remoteURL)
                         await MainActor.run {
-                            coloringImage = image
+                            viewModel.currentImage = image
                         }
                     } catch {
                         print("Failed to load image: \(error)")
@@ -201,7 +232,7 @@ struct ColorBookDrawingView: View {
     }
 
     private func handleTap(at location: CGPoint, in viewSize: CGSize) {
-        guard let image = coloringImage else { return }
+        guard let image = viewModel.currentImage else { return }
 
         // Convert tap location to image coordinates
         let transform = viewModel.state.pageTransform
@@ -234,8 +265,7 @@ struct ColorBookDrawingView: View {
 
         // Perform flood fill
         if let filledImage = floodFill(image: image, at: CGPoint(x: imageX, y: imageY), with: viewModel.state.selectedColor) {
-            coloringImage = filledImage
-            viewModel.fill(at: location)
+            viewModel.recordFill(at: location, filledImage: filledImage)
         }
     }
 

@@ -1,16 +1,19 @@
 import Foundation
 import SwiftUI
 import Combine
+import UIKit
 
 /// ViewModel for colorbook drawing functionality
 @MainActor
 class ColorbookViewModel: ObservableObject {
     @Published var state: ColorbookState
+    @Published var currentImage: UIImage? // Track current image state
 
     private let maxHistorySize = 50
 
     init(initialState: ColorbookState = .initial) {
         self.state = initialState
+        self.currentImage = nil
     }
 
     // MARK: - Color Management
@@ -22,9 +25,9 @@ class ColorbookViewModel: ObservableObject {
 
     // MARK: - Fill Operations
 
-    /// Perform a fill operation at the given point
-    func fill(at point: CGPoint) {
-        let operation = FillOperation(point: point, color: state.selectedColor)
+    /// Perform a fill operation with the resulting image
+    func recordFill(at point: CGPoint, filledImage: UIImage) {
+        let operation = FillOperation(point: point, color: state.selectedColor, imageSnapshot: filledImage)
 
         // If we're not at the end of history, remove future operations
         var newHistory = state.fillHistory
@@ -32,7 +35,7 @@ class ColorbookViewModel: ObservableObject {
             newHistory = Array(newHistory.prefix(state.historyIndex + 1))
         }
 
-        // Add new operation
+        // Add new operation with image snapshot
         newHistory.append(operation)
 
         // Limit history size
@@ -40,6 +43,8 @@ class ColorbookViewModel: ObservableObject {
             newHistory.removeFirst()
         }
 
+        // Update state and current image
+        currentImage = filledImage
         state = state.with(
             fillHistory: newHistory,
             historyIndex: newHistory.count - 1,
@@ -54,9 +59,12 @@ class ColorbookViewModel: ObservableObject {
 
     /// Undo the last fill operation
     func undo() {
-        guard canUndo() else { return }
+        guard canUndo(), state.historyIndex > 0 else { return }
 
         let newIndex = state.historyIndex - 1
+        let previousImage = state.fillHistory[newIndex].imageSnapshot
+
+        currentImage = previousImage
         state = state.with(historyIndex: newIndex)
     }
 
@@ -65,14 +73,23 @@ class ColorbookViewModel: ObservableObject {
         guard canRedo() else { return }
 
         let newIndex = state.historyIndex + 1
+        let nextImage = state.fillHistory[newIndex].imageSnapshot
+
+        currentImage = nextImage
         state = state.with(historyIndex: newIndex)
+    }
+
+    /// Get the image for the current history index
+    func getImageAtCurrentIndex() -> UIImage? {
+        guard state.historyIndex >= 0, state.historyIndex < state.fillHistory.count else { return nil }
+        return state.fillHistory[state.historyIndex].imageSnapshot
     }
 
     // MARK: - State Queries
 
     /// Check if undo is available
     func canUndo() -> Bool {
-        state.historyIndex >= 0
+        state.historyIndex > 0
     }
 
     /// Check if redo is available

@@ -56,15 +56,17 @@ struct FillOperation: Identifiable, Equatable {
     let point: CGPoint
     let color: Color
     let timestamp: Date
+    let imageSnapshot: UIImage? // Store the image after this fill operation
 
-    init(point: CGPoint, color: Color) {
+    init(point: CGPoint, color: Color, imageSnapshot: UIImage? = nil) {
         self.point = point
         self.color = color
         self.timestamp = Date()
+        self.imageSnapshot = imageSnapshot
     }
 
     static func == (lhs: FillOperation, rhs: FillOperation) -> Bool {
-        lhs.point == rhs.point && lhs.id == rhs.id
+        lhs.id == rhs.id
     }
 }
 
