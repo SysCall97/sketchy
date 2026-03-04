@@ -28,6 +28,7 @@ struct HomeView: View {
         case home = "Home"
         case favorites = "Favorites"
         case projects = "Projects"
+        case projects2 = "Colorbook"
     }
 
     // MARK: - Computed Properties
@@ -326,6 +327,8 @@ struct HomeView: View {
             return "star.fill"
         case .projects:
             return "folder.fill"
+        case .projects2:
+            return "paintbrush.pointed.fill"
         }
     }
 
