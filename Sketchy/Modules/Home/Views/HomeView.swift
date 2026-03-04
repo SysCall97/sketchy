@@ -398,9 +398,7 @@ struct HomeView: View {
     }
 
     private func handlePaywallDismissal() {
-        // Check if user subscribed after paywall
         if coordinator.subscriptionManager.isSubscribedOrUnlockedAll() {
-            // Wait for paywall dismissal animation to complete, then proceed with pending drawing
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
                 if let template = pendingTemplate {
                     pendingTemplate = nil
@@ -414,7 +412,6 @@ struct HomeView: View {
                 }
             }
         } else {
-            // User didn't subscribe, clear pending state
             pendingTemplate = nil
             pendingImage = nil
         }
