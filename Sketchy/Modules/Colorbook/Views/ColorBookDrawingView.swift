@@ -1,4 +1,6 @@
 import SwiftUI
+import CoreGraphics
+import UIKit
 
 /// Colorbook drawing interface - Main coloring view
 struct ColorBookDrawingView: View {
@@ -6,9 +8,9 @@ struct ColorBookDrawingView: View {
     let coloringPage: TemplateModel
 
     @StateObject private var viewModel: ColorbookViewModel
-//    @State private var gestureHandler = TransformGestureHandler()
     @State private var coloringImage: UIImage?
-//    @State private var isUIVisible = true
+    @State private var imageSize: CGSize = .zero
+    @State private var imagePosition: CGRect = .zero
 
     init(coordinator: AppCoordinator, coloringPage: TemplateModel) {
         self.coordinator = coordinator
@@ -36,12 +38,40 @@ struct ColorBookDrawingView: View {
                             x: viewModel.state.pageTransform.translation.x,
                             y: viewModel.state.pageTransform.translation.y
                         )
+                        .background(
+                            GeometryReader { imageGeometry in
+                                Color.clear
+                                    .onAppear {
+                                        // Calculate image frame for tap conversion
+                                        let aspectRatio = image.size.width / image.size.height
+                                        let viewWidth = geometry.size.width - 60 // Account for padding
+                                        let viewHeight = geometry.size.height
+
+                                        let renderWidth: CGFloat
+                                        let renderHeight: CGFloat
+
+                                        if viewWidth / aspectRatio <= viewHeight {
+                                            renderWidth = viewWidth
+                                            renderHeight = viewWidth / aspectRatio
+                                        } else {
+                                            renderHeight = viewHeight
+                                            renderWidth = viewHeight * aspectRatio
+                                        }
+
+                                        imageSize = CGSize(width: image.size.width, height: image.size.height)
+                                        imagePosition = CGRect(
+                                            x: (geometry.size.width - renderWidth) / 2,
+                                            y: (geometry.size.height - renderHeight) / 2,
+                                            width: renderWidth,
+                                            height: renderHeight
+                                        )
+                                    }
+                            }
+                        )
                         .simultaneousGesture(
                             DragGesture(minimumDistance: 0)
                                 .onEnded { value in
-                                    // Handle tap for filling (basic implementation)
-                                    // Note: This is a placeholder - actual flood fill requires image processing
-                                    handleTap(at: value.location)
+                                    handleTap(at: value.location, in: geometry.size)
                                 }
                         )
                 } else {
@@ -170,18 +200,162 @@ struct ColorBookDrawingView: View {
         }
     }
 
-    private func handleTap(at location: CGPoint) {
-        // Note: This is a basic placeholder for tap-to-fill
-        // A full implementation would:
-        // 1. Convert tap point to image coordinates
-        // 2. Implement flood fill algorithm
-        // 3. Apply the fill to the image
-        // 4. Update the display
+    private func handleTap(at location: CGPoint, in viewSize: CGSize) {
+        guard let image = coloringImage else { return }
 
-        // For now, just record the operation
-        viewModel.fill(at: location)
+        // Convert tap location to image coordinates
+        let transform = viewModel.state.pageTransform
 
-        // TODO: Implement actual flood fill
-        print("Fill at: \(location) with color: \(viewModel.state.selectedColor)")
+        // Account for translation
+        var adjustedLocation = CGPoint(
+            x: location.x - transform.translation.x - 30, // 30 is horizontal padding
+            y: location.y - transform.translation.y
+        )
+
+        // Account for scale (scale is centered)
+        let centerX = viewSize.width / 2
+        let centerY = viewSize.height / 2
+        adjustedLocation = CGPoint(
+            x: (adjustedLocation.x - centerX) / transform.scale + centerX,
+            y: (adjustedLocation.y - centerY) / transform.scale + centerY
+        )
+
+        // Convert to image position
+        guard imagePosition.contains(adjustedLocation) else { return }
+
+        let relativeX = adjustedLocation.x - imagePosition.minX
+        let relativeY = adjustedLocation.y - imagePosition.minY
+
+        let imageX = Int((relativeX / imagePosition.width) * imageSize.width)
+        let imageY = Int((relativeY / imagePosition.height) * imageSize.height)
+
+        guard imageX >= 0, imageY >= 0,
+              imageX < Int(imageSize.width), imageY < Int(imageSize.height) else { return }
+
+        // Perform flood fill
+        if let filledImage = floodFill(image: image, at: CGPoint(x: imageX, y: imageY), with: viewModel.state.selectedColor) {
+            coloringImage = filledImage
+            viewModel.fill(at: location)
+        }
+    }
+
+    // MARK: - Flood Fill
+
+    private func floodFill(image: UIImage, at point: CGPoint, with fillColor: Color) -> UIImage? {
+        guard let cgImage = image.cgImage else { return nil }
+        let width = cgImage.width
+        let height = cgImage.height
+
+        let x = Int(point.x)
+        let y = Int(point.y)
+
+        guard x >= 0, y >= 0, x < width, y < height else { return nil }
+
+        // Create bitmap context
+        let colorSpace = CGColorSpaceCreateDeviceRGB()
+        let bytesPerPixel = 4
+        let bytesPerRow = bytesPerPixel * width
+        let bitmapInfo = CGImageAlphaInfo.premultipliedLast.rawValue
+
+        guard let context = CGContext(data: nil,
+                                    width: width,
+                                    height: height,
+                                    bitsPerComponent: 8,
+                                    bytesPerRow: bytesPerRow,
+                                    space: colorSpace,
+                                    bitmapInfo: bitmapInfo) else { return nil }
+
+        // Draw image to context
+        context.draw(cgImage, in: CGRect(x: 0, y: 0, width: width, height: height))
+
+        // Get pixel data
+        guard let pixelData = context.data else { return nil }
+        let data = pixelData.bindMemory(to: UInt8.self, capacity: width * height * bytesPerPixel)
+
+        // Get target color (color to replace)
+        let targetIndex = (y * width + x) * bytesPerPixel
+        let targetR = data[targetIndex]
+        let targetG = data[targetIndex + 1]
+        let targetB = data[targetIndex + 2]
+        let targetA = data[targetIndex + 3]
+
+        // Convert SwiftUI Color to RGBA
+        let fillColorRGBA = colorToRGBA(fillColor)
+
+        // Check if tapping on same color
+        if targetR == fillColorRGBA.r &&
+           targetG == fillColorRGBA.g &&
+           targetB == fillColorRGBA.b &&
+           targetA == fillColorRGBA.a {
+            return nil // Already filled with this color
+        }
+
+        // Tolerance for color matching (for anti-aliased lines)
+        let tolerance: UInt8 = 30
+
+        // BFS flood fill
+        var queue = [(x, y)]
+        var visited = Set<[Int]>()
+        visited.insert([x, y])
+
+        while !queue.isEmpty {
+            let (cx, cy) = queue.removeFirst()
+
+            // Check bounds
+            if cx < 0 || cx >= width || cy < 0 || cy >= height { continue }
+
+            let index = (cy * width + cx) * bytesPerPixel
+            let r = data[index]
+            let g = data[index + 1]
+            let b = data[index + 2]
+            let a = data[index + 3]
+
+            // Check if pixel matches target color (within tolerance)
+            if abs(Int(r) - Int(targetR)) <= Int(tolerance) &&
+               abs(Int(g) - Int(targetG)) <= Int(tolerance) &&
+               abs(Int(b) - Int(targetB)) <= Int(tolerance) &&
+               abs(Int(a) - Int(targetA)) <= Int(tolerance) {
+
+                // Fill pixel
+                data[index] = fillColorRGBA.r
+                data[index + 1] = fillColorRGBA.g
+                data[index + 2] = fillColorRGBA.b
+                data[index + 3] = fillColorRGBA.a
+
+                // Add neighbors
+                let neighbors = [(cx + 1, cy), (cx - 1, cy), (cx, cy + 1), (cx, cy - 1)]
+                for (nx, ny) in neighbors {
+                    if !visited.contains([nx, ny]) {
+                        visited.insert([nx, ny])
+                        queue.append((nx, ny))
+                    }
+                }
+            }
+        }
+
+        // Create new image from context
+        guard let newCGImage = context.makeImage() else { return nil }
+        return UIImage(cgImage: newCGImage)
+    }
+
+    private func colorToRGBA(_ color: Color) -> (r: UInt8, g: UInt8, b: UInt8, a: UInt8) {
+        #if os(iOS)
+        let uiColor = UIColor(color)
+        var red: CGFloat = 0
+        var green: CGFloat = 0
+        var blue: CGFloat = 0
+        var alpha: CGFloat = 0
+
+        uiColor.getRed(&red, green: &green, blue: &blue, alpha: &alpha)
+
+        return (
+            r: UInt8(red * 255),
+            g: UInt8(green * 255),
+            b: UInt8(blue * 255),
+            a: UInt8(alpha * 255)
+        )
+        #else
+        return (r: 255, g: 0, b: 0, a: 255)
+        #endif
     }
 }
