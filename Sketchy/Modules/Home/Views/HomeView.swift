@@ -300,7 +300,7 @@ struct HomeView: View {
                             withAnimation(.spring(response: 0.3)) { selectedTab = tab }
                         }) {
                             VStack(spacing: 4) {
-                                Image(systemName: iconName(for: tab))
+                                Image(systemName: tab.iconName())
                                     .font(.system(size: 20))
                                 Text(tab.rawValue)
                                     .font(.caption2)
@@ -334,20 +334,6 @@ struct HomeView: View {
             }
         }
         .ignoresSafeArea()
-    }
-
-
-    private func iconName(for tab: HomeTab) -> String {
-        switch tab {
-        case .home:
-            return "house.fill"
-        case .favorites:
-            return "star.fill"
-        case .projects:
-            return "folder.fill"
-        case .projects2:
-            return "paintbrush.pointed.fill"
-        }
     }
 
     private func handleSelectedImage(_ newImage: UIImage?) {
