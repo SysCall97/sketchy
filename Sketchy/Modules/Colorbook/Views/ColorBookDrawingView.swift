@@ -12,6 +12,10 @@ struct ColorBookDrawingView: View {
     @State private var imagePosition: CGRect = .zero
     @State private var gestureHandler = TransformGestureHandler()
     @State private var lastScale: CGFloat = 1.0
+    @State private var zoomAnchor: CGPoint = .zero
+    @State private var gestureStartScale: CGFloat = 1.0
+    @State private var isMagnifying: Bool = false
+    @State private var viewSize: CGSize = .zero
 
     init(coordinator: AppCoordinator, coloringPage: TemplateModel) {
         self.coordinator = coordinator
@@ -27,6 +31,8 @@ struct ColorBookDrawingView: View {
 
             // Coloring page with transforms
             GeometryReader { geometry in
+                let localViewSize = geometry.size
+
                 if let image = viewModel.currentImage {
                     Image(uiImage: image)
                         .resizable()
@@ -45,8 +51,8 @@ struct ColorBookDrawingView: View {
                                     .onAppear {
                                         // Calculate image frame for tap conversion
                                         let aspectRatio = image.size.width / image.size.height
-                                        let viewWidth = geometry.size.width - 60 // Account for padding
-                                        let viewHeight = geometry.size.height
+                                        let viewWidth = localViewSize.width - 60 // Account for padding
+                                        let viewHeight = localViewSize.height
 
                                         let renderWidth: CGFloat
                                         let renderHeight: CGFloat
@@ -61,8 +67,8 @@ struct ColorBookDrawingView: View {
 
                                         imageSize = CGSize(width: image.size.width, height: image.size.height)
                                         imagePosition = CGRect(
-                                            x: (geometry.size.width - renderWidth) / 2,
-                                            y: (geometry.size.height - renderHeight) / 2,
+                                            x: (localViewSize.width - renderWidth) / 2,
+                                            y: (localViewSize.height - renderHeight) / 2,
                                             width: renderWidth,
                                             height: renderHeight
                                         )
@@ -75,13 +81,19 @@ struct ColorBookDrawingView: View {
                                     // Only handle as tap if there was minimal movement
                                     let translation = abs(value.translation.width) + abs(value.translation.height)
                                     if translation < 5 {
-                                        handleTap(at: value.location, in: geometry.size)
+                                        handleTap(at: value.location, in: localViewSize)
                                     }
                                 }
                         )
                         .simultaneousGesture(
                             DragGesture()
                                 .onChanged { value in
+                                    // Update zoom anchor to current drag position
+                                    // Use the midpoint between start and current for better pinch tracking
+                                    zoomAnchor = CGPoint(
+                                        x: (value.startLocation.x + value.location.x) / 2,
+                                        y: (value.startLocation.y + value.location.y) / 2
+                                    )
                                     let newTransform = gestureHandler.handleDrag(value, current: viewModel.state.pageTransform)
                                     viewModel.updatePageTransform(newTransform)
                                 }
@@ -92,11 +104,47 @@ struct ColorBookDrawingView: View {
                         .simultaneousGesture(
                             MagnificationGesture()
                                 .onChanged { value in
-                                    let newTransform = gestureHandler.handlePinch(value, current: viewModel.state.pageTransform)
+                                    let currentTransform = viewModel.state.pageTransform
+
+                                    // Initialize on first change
+                                    if !isMagnifying {
+                                        isMagnifying = true
+                                        gestureStartScale = currentTransform.scale
+                                        // Set anchor to center if not already set
+                                        if zoomAnchor == .zero {
+                                            zoomAnchor = CGPoint(x: localViewSize.width / 2, y: localViewSize.height / 2)
+                                        }
+                                    }
+
+                                    // Calculate new scale
+                                    let newScale = gestureStartScale * value
+
+                                    // Clamp scale to reasonable limits
+                                    let clampedScale = max(0.5, min(newScale, 5.0))
+
+                                    // Calculate translation to keep anchor point stable
+                                    // Anchor point is in view coordinates
+                                    let anchorInView = zoomAnchor
+
+                                    // Current anchor position in transformed space
+                                    let currentAnchorX = (anchorInView.x - localViewSize.width / 2 - currentTransform.translation.x) / currentTransform.scale
+                                    let currentAnchorY = (anchorInView.y - localViewSize.height / 2 - currentTransform.translation.y) / currentTransform.scale
+
+                                    // New translation to keep anchor at the same view position
+                                    let newTranslationX = anchorInView.x - localViewSize.width / 2 - currentAnchorX * clampedScale
+                                    let newTranslationY = anchorInView.y - localViewSize.height / 2 - currentAnchorY * clampedScale
+
+                                    // Update transform
+                                    let newTransform = Transform(
+                                        translation: CGPoint(x: newTranslationX, y: newTranslationY),
+                                        scale: clampedScale,
+                                        rotation: currentTransform.rotation
+                                    )
+
                                     viewModel.updatePageTransform(newTransform)
                                 }
                                 .onEnded { _ in
-                                    gestureHandler.handlePinchEnded()
+                                    isMagnifying = false
                                 }
                         )
                         .simultaneousGesture(
@@ -211,17 +259,17 @@ struct ColorBookDrawingView: View {
     private func loadImage() {
         // Load image from template
         if let localImage = coloringPage.image {
-            viewModel.currentImage = localImage
+            viewModel.initializeImage(localImage)
         } else if let remoteURL = coloringPage.remoteURL {
             // Load from cache or URL
             if let cachedImage = ImageCache.shared.getImage(for: remoteURL) {
-                viewModel.currentImage = cachedImage
+                viewModel.initializeImage(cachedImage)
             } else {
                 Task {
                     do {
                         let image = try await ImageCache.shared.loadImage(from: remoteURL)
                         await MainActor.run {
-                            viewModel.currentImage = image
+                            viewModel.initializeImage(image)
                         }
                     } catch {
                         print("Failed to load image: \(error)")

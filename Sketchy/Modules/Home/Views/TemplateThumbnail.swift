@@ -11,17 +11,19 @@ struct TemplateThumbnail: View {
             // Thumbnail image with favorite star overlay
             ZStack(alignment: .topTrailing) {
                 CachedAsyncImage(url: template.remoteURL, localImage: template.image)
-
-                // Favorite star button
-                Button(action: {
-                    toggleFavorite()
-                }) {
-                    Image(systemName: isFavorite ? "star.fill" : "star")
-                        .font(.title2)
-                        .foregroundColor(isFavorite ? .yellow : Color(.systemGray3))
-                        .padding(8)
+                
+                if let onFavoriteToggle {
+                    // Favorite star button
+                    Button(action: {
+                        toggleFavorite()
+                    }) {
+                        Image(systemName: isFavorite ? "star.fill" : "star")
+                            .font(.title2)
+                            .foregroundColor(isFavorite ? .yellow : Color(.systemGray3))
+                            .padding(8)
+                    }
+                    .padding(8)
                 }
-                .padding(8)
             }
         }
         .onAppear {

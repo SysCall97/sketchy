@@ -25,6 +25,25 @@ class ColorbookViewModel: ObservableObject {
 
     // MARK: - Fill Operations
 
+    /// Initialize the history with the original image
+    func initializeImage(_ image: UIImage) {
+        // Only initialize if history is empty
+        guard state.fillHistory.isEmpty else {
+            currentImage = image
+            return
+        }
+
+        // Create initial operation with original image
+        let initialOperation = FillOperation(point: .zero, color: .clear, imageSnapshot: image)
+
+        // Update state and current image
+        currentImage = image
+        state = state.with(
+            fillHistory: [initialOperation],
+            historyIndex: 0
+        )
+    }
+
     /// Perform a fill operation with the resulting image
     func recordFill(at point: CGPoint, filledImage: UIImage) {
         let operation = FillOperation(point: point, color: state.selectedColor, imageSnapshot: filledImage)
