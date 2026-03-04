@@ -1,6 +1,7 @@
 import SwiftUI
 import CoreGraphics
 import UIKit
+import Photos
 
 /// Colorbook drawing interface - Main coloring view
 struct ColorBookDrawingView: View {
@@ -16,6 +17,9 @@ struct ColorBookDrawingView: View {
     @State private var gestureStartScale: CGFloat = 1.0
     @State private var isMagnifying: Bool = false
     @State private var viewSize: CGSize = .zero
+    @State private var isSavingImage: Bool = false
+    @State private var saveAlertMessage: String = ""
+    @State private var showSaveAlert: Bool = false
 
     init(coordinator: AppCoordinator, coloringPage: TemplateModel) {
         self.coordinator = coordinator
@@ -162,7 +166,7 @@ struct ColorBookDrawingView: View {
 
             // UI Controls
             VStack {
-                // Top: Back button
+                // Top: Back button and download button
                 HStack {
                     Button(action: {
                         coordinator.goBack()
@@ -175,6 +179,16 @@ struct ColorBookDrawingView: View {
                     }
 
                     Spacer()
+
+                    Button(action: {
+                        saveImageToGallery()
+                    }) {
+                        Image(systemName: "square.and.arrow.down")
+                            .foregroundColor(.white)
+                            .padding()
+                            .background(Color.black.opacity(0.5))
+                            .clipShape(Circle())
+                    }
                 }
                 .padding()
                 .offset(y: 50)
@@ -197,6 +211,34 @@ struct ColorBookDrawingView: View {
 //        }
         .onAppear {
             loadImage()
+        }
+        .alert("Save Status", isPresented: $showSaveAlert) {
+            Button("OK") {
+                showSaveAlert = false
+            }
+        } message: {
+            Text(saveAlertMessage)
+        }
+        .overlay {
+            if isSavingImage {
+                ZStack {
+                    Color.black.opacity(0.3)
+                        .ignoresSafeArea()
+
+                    VStack(spacing: 16) {
+                        ProgressView()
+                            .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                            .scaleEffect(1.5)
+
+                        Text("Saving image...")
+                            .foregroundColor(.white)
+                            .font(.body)
+                    }
+                    .padding(24)
+                    .background(Color.black.opacity(0.7))
+                    .cornerRadius(12)
+                }
+            }
         }
     }
 
@@ -255,6 +297,47 @@ struct ColorBookDrawingView: View {
     }
 
     // MARK: - Actions
+
+    private func saveImageToGallery() {
+        guard let image = viewModel.currentImage else { return }
+
+        isSavingImage = true
+
+        // Request photo library permission and save
+        PHPhotoLibrary.requestAuthorization { status in
+            DispatchQueue.main.async {
+                switch status {
+                case .authorized, .limited:
+                    PHPhotoLibrary.shared().performChanges {
+                        PHAssetChangeRequest.creationRequestForAsset(from: image)
+                    } completionHandler: { success, error in
+                        DispatchQueue.main.async {
+                            isSavingImage = false
+                            if success {
+                                saveAlertMessage = "Image saved successfully to Photos!"
+                                showSaveAlert = true
+                            } else if let error = error {
+                                saveAlertMessage = "Failed to save image: \(error.localizedDescription)"
+                                showSaveAlert = true
+                            }
+                        }
+                    }
+                case .denied, .restricted:
+                    isSavingImage = false
+                    saveAlertMessage = "Photo library access is denied. Please enable it in Settings."
+                    showSaveAlert = true
+                case .notDetermined:
+                    isSavingImage = false
+                    saveAlertMessage = "Photo library access not determined."
+                    showSaveAlert = true
+                @unknown default:
+                    isSavingImage = false
+                    saveAlertMessage = "Unknown authorization status."
+                    showSaveAlert = true
+                }
+            }
+        }
+    }
 
     private func loadImage() {
         // Load image from template
