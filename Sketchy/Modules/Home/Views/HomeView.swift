@@ -22,15 +22,6 @@ struct HomeView: View {
     // Favorites state - triggers view update when favorites change
     @State private var favoritesUpdateTrigger = UUID()
 
-    // MARK: - Tabs
-
-    enum HomeTab: String, CaseIterable {
-        case home = "Home"
-        case favorites = "Favorites"
-        case projects = "Projects"
-        case projects2 = "Colorbook"
-    }
-
     // MARK: - Computed Properties
 
     private var displayedTemplates: [TemplateModel] {
@@ -250,7 +241,7 @@ struct HomeView: View {
                     Spacer()
                     PromoFloatingButton(isPaywallPresented: $isOfferPaywallPresented)
                         .padding(.trailing, 16)
-                        .padding(.bottom, 150)
+                        .padding(.bottom, 100)
                 }
             }
         }
@@ -459,162 +450,3 @@ struct HomeView: View {
         }
     }
 }
-
-/// Template thumbnail component
-struct TemplateThumbnail: View {
-    let template: TemplateModel
-    var onFavoriteToggle: (() -> Void)? = nil
-    @State private var isFavorite: Bool = false
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            // Thumbnail image with favorite star overlay
-            ZStack(alignment: .topTrailing) {
-                CachedAsyncImage(url: template.remoteURL, localImage: template.image)
-
-                // Favorite star button
-                Button(action: {
-                    toggleFavorite()
-                }) {
-                    Image(systemName: isFavorite ? "star.fill" : "star")
-                        .font(.title2)
-                        .foregroundColor(isFavorite ? .yellow : Color(.systemGray3))
-                        .padding(8)
-                }
-                .padding(8)
-            }
-        }
-        .onAppear {
-            isFavorite = KeychainManager.shared.isTemplateFavorite(template.id.uuidString)
-        }
-    }
-
-    private func toggleFavorite() {
-        isFavorite.toggle()
-        let templateID = template.id.uuidString
-
-        if isFavorite {
-            KeychainManager.shared.addFavoriteTemplate(templateID)
-        } else {
-            KeychainManager.shared.removeFavoriteTemplate(templateID)
-        }
-
-        onFavoriteToggle?()
-    }
-}
-
-struct CachedAsyncImage: View {
-    let url: String?
-    let localImage: UIImage?
-
-    @StateObject private var imageLoader = ImageLoader()
-    @State private var loadedImage: UIImage?
-    @State private var containerHeight: CGFloat = 150
-
-    var body: some View {
-        let displayImage: UIImage? = localImage ?? loadedImage
-
-        ZStack {
-            RoundedRectangle(cornerRadius: 12)
-                .fill(Color.clear)
-
-            if let image = displayImage {
-                Image(uiImage: image)
-                    .resizable()
-                    .aspectRatio(contentMode: .fit)
-                    .clipShape(RoundedRectangle(cornerRadius: 12))
-            } else if url != nil {
-                // Loading state
-                ProgressView()
-                    .progressViewStyle(CircularProgressViewStyle())
-                    .scaleEffect(1.2)
-            } else {
-                // Placeholder
-                Image(systemName: "photo")
-                    .font(.largeTitle)
-                    .foregroundColor(.clear)
-            }
-        }
-        .frame(height: containerHeight)
-        .onAppear {
-            // Calculate initial height for local image
-            if let image = localImage {
-                let aspectRatio = image.size.width / image.size.height
-                containerHeight = 160 / aspectRatio
-            }
-
-            // Load remote image if needed
-            if let urlString = url {
-                imageLoader.loadImage(from: urlString) { image in
-                    loadedImage = image
-                    let aspectRatio = image.size.width / image.size.height
-                    containerHeight = 160 / aspectRatio
-                }
-            }
-        }
-        .onChange(of: imageLoader.image) { newImage in
-            if let image = newImage {
-                let aspectRatio = image.size.width / image.size.height
-                containerHeight = 160 / aspectRatio
-            }
-        }
-    }
-}
-
-class ImageLoader: ObservableObject {
-    @Published var image: UIImage?
-    private var cache = ImageCache.shared
-
-    func loadImage(from urlString: String, completion: @escaping (UIImage) -> Void = { _ in }) {
-        if let cachedImage = cache.getImage(for: urlString) {
-            self.image = cachedImage
-            completion(cachedImage)
-            return
-        }
-
-        Task {
-            do {
-                let downloadedImage = try await cache.loadImage(from: urlString)
-                await MainActor.run {
-                    self.image = downloadedImage
-                    completion(downloadedImage)
-                }
-            } catch {
-                print("Failed to load image from \(urlString): \(error)")
-            }
-        }
-    }
-}
-
-struct TabBarWithHole: Shape {
-    func path(in rect: CGRect) -> Path {
-        var path = Path()
-        let center = rect.width / 2
-        let holeWidth: CGFloat = 90
-        let holeHeight: CGFloat = 35
-
-        path.move(to: CGPoint(x: 0, y: 0))
-        
-        path.addLine(to: CGPoint(x: center - (holeWidth / 2) - 15, y: 0))
-        
-        path.addCurve(
-            to: CGPoint(x: center, y: holeHeight),
-            control1: CGPoint(x: center - (holeWidth / 2) + 5, y: 0),
-            control2: CGPoint(x: center - (holeWidth / 2) + 10, y: holeHeight)
-        )
-        
-        path.addCurve(
-            to: CGPoint(x: center + (holeWidth / 2) + 15, y: 0),
-            control1: CGPoint(x: center + (holeWidth / 2) - 10, y: holeHeight),
-            control2: CGPoint(x: center + (holeWidth / 2) - 5, y: 0)
-        )
-        
-        path.addLine(to: CGPoint(x: rect.width, y: 0))
-        path.addLine(to: CGPoint(x: rect.width, y: rect.height))
-        path.addLine(to: CGPoint(x: 0, y: rect.height))
-        path.closeSubpath()
-        
-        return path
-    }
-}
-
