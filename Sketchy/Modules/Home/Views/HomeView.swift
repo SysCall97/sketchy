@@ -55,7 +55,7 @@ struct HomeView: View {
         ZStack {
             scrollViewContent
             floatingDailyLimitIndicator
-            floatingImportButton
+//            floatingImportButton
             bottomTabBar
             floatingPromoButton  // Moved to top so it's not covered
         }
@@ -287,37 +287,64 @@ struct HomeView: View {
             .padding(.bottom, 60)
         }
     }
-
+    
     private var bottomTabBar: some View {
         VStack {
             Spacer()
-
-            HStack(spacing: 0) {
-                ForEach(HomeTab.allCases, id: \.self) { tab in
-                    Button(action: {
-                        withAnimation(.spring(response: 0.3)) {
-                            selectedTab = tab
+            
+            ZStack(alignment: .top) {
+                TabBarWithHole()
+                    .fill(Color.white)
+                    .frame(height: 80)
+                    .cornerRadius(12, corners: [.topLeft, .topRight])
+                    .shadow(color: .black.opacity(0.1), radius: 5, y: -2)
+                
+                HStack(spacing: 0) {
+                    ForEach(HomeTab.allCases, id: \.self) { tab in
+                        if tab == HomeTab.allCases[HomeTab.allCases.count/2] {
+                            Spacer().frame(width: 80)
                         }
-                    }) {
-                        VStack(spacing: 4) {
-                            Image(systemName: iconName(for: tab))
-                                .font(.system(size: 20))
-                            Text(tab.rawValue)
-                                .font(.caption2)
+                        
+                        Button(action: {
+                            withAnimation(.spring(response: 0.3)) { selectedTab = tab }
+                        }) {
+                            VStack(spacing: 4) {
+                                Image(systemName: iconName(for: tab))
+                                    .font(.system(size: 20))
+                                Text(tab.rawValue)
+                                    .font(.caption2)
+                            }
+                            .foregroundColor(selectedTab == tab ? .blue : .gray)
+                            .frame(maxWidth: .infinity)
                         }
-                        .foregroundColor(selectedTab == tab ? .blue : .gray)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 8)
                     }
                 }
+                .padding(.top, 12)
+                
+                Button(action: {
+                    Task {
+                        await requestPhotoLibraryPermission()
+                    }
+                }) {
+                    Image(systemName: "plus")
+                        .font(.title.bold())
+                        .foregroundColor(.white)
+                        .frame(width: 60, height: 60)
+                        .background(Circle().fill(
+                            LinearGradient(
+                                gradient: Gradient(colors: [Color.blue, Color.purple]),
+                                startPoint: .leading,
+                                endPoint: .trailing
+                            )
+                        ))
+                        .shadow(radius: 4)
+                }
+                .offset(y: -30)
             }
-            .padding(.horizontal)
-            .padding(.vertical, 12)
-            .background(Color.white)
-            .cornerRadius(12, corners: [.topLeft, .topRight])
         }
         .ignoresSafeArea()
     }
+
 
     private func iconName(for tab: HomeTab) -> String {
         switch tab {
@@ -331,10 +358,6 @@ struct HomeView: View {
             return "paintbrush.pointed.fill"
         }
     }
-
-    // MARK: - Helper Methods
-
-    // MARK: - Helper Methods
 
     private func handleSelectedImage(_ newImage: UIImage?) {
         guard let image = newImage else { return }
@@ -465,7 +488,6 @@ struct TemplateThumbnail: View {
             }
         }
         .onAppear {
-            // Load favorite status on appear
             isFavorite = KeychainManager.shared.isTemplateFavorite(template.id.uuidString)
         }
     }
@@ -480,12 +502,10 @@ struct TemplateThumbnail: View {
             KeychainManager.shared.removeFavoriteTemplate(templateID)
         }
 
-        // Notify parent of favorite change
         onFavoriteToggle?()
     }
 }
 
-/// Async image view with caching support
 struct CachedAsyncImage: View {
     let url: String?
     let localImage: UIImage?
@@ -544,20 +564,17 @@ struct CachedAsyncImage: View {
     }
 }
 
-/// Image loader with caching
 class ImageLoader: ObservableObject {
     @Published var image: UIImage?
     private var cache = ImageCache.shared
 
     func loadImage(from urlString: String, completion: @escaping (UIImage) -> Void = { _ in }) {
-        // Check cache first
         if let cachedImage = cache.getImage(for: urlString) {
             self.image = cachedImage
             completion(cachedImage)
             return
         }
 
-        // Load from URL
         Task {
             do {
                 let downloadedImage = try await cache.loadImage(from: urlString)
@@ -571,3 +588,36 @@ class ImageLoader: ObservableObject {
         }
     }
 }
+
+struct TabBarWithHole: Shape {
+    func path(in rect: CGRect) -> Path {
+        var path = Path()
+        let center = rect.width / 2
+        let holeWidth: CGFloat = 90
+        let holeHeight: CGFloat = 35
+
+        path.move(to: CGPoint(x: 0, y: 0))
+        
+        path.addLine(to: CGPoint(x: center - (holeWidth / 2) - 15, y: 0))
+        
+        path.addCurve(
+            to: CGPoint(x: center, y: holeHeight),
+            control1: CGPoint(x: center - (holeWidth / 2) + 5, y: 0),
+            control2: CGPoint(x: center - (holeWidth / 2) + 10, y: holeHeight)
+        )
+        
+        path.addCurve(
+            to: CGPoint(x: center + (holeWidth / 2) + 15, y: 0),
+            control1: CGPoint(x: center + (holeWidth / 2) - 10, y: holeHeight),
+            control2: CGPoint(x: center + (holeWidth / 2) - 5, y: 0)
+        )
+        
+        path.addLine(to: CGPoint(x: rect.width, y: 0))
+        path.addLine(to: CGPoint(x: rect.width, y: rect.height))
+        path.addLine(to: CGPoint(x: 0, y: rect.height))
+        path.closeSubpath()
+        
+        return path
+    }
+}
+
