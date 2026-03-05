@@ -178,8 +178,21 @@ struct TutorialDragPage: View {
     // MARK: - State
     @State private var boxOffset = CGSize.zero
     @State private var lastOffset = CGSize.zero
+    @State private var boxScale: CGFloat = 1.0
+    @State private var lastScale: CGFloat = 1.0
+    @State private var boxRotationRadians: CGFloat = 0.0
+    @State private var lastRotationRadians: CGFloat = 0.0
+
+    // Gesture completion states
     @State private var hasDragged = false
-    @State private var showMessage = false
+    @State private var hasMagnified = false
+    @State private var hasRotated = false
+    @State private var hasPinched = false
+
+    // Check if all gestures are complete
+    private var allGesturesComplete: Bool {
+        hasDragged && hasMagnified && hasRotated && hasPinched
+    }
 
     // MARK: - Body
     var body: some View {
@@ -187,8 +200,7 @@ struct TutorialDragPage: View {
             // Background
             Color.white
 
-            // Draggable gray box (at the back - lowest z-index)
-            // Positioned in center initially, can be dragged anywhere
+            // Draggable, scalable, rotatable gray box
             GeometryReader { geometry in
                 RoundedRectangle(cornerRadius: 12)
                     .fill(Color.gray.opacity(0.3))
@@ -197,31 +209,81 @@ struct TutorialDragPage: View {
                             .stroke(Color.black, lineWidth: 2)
                     )
                     .frame(width: 200, height: 200)
+                    .scaleEffect(boxScale)
+                    .rotationEffect(Angle(radians: boxRotationRadians))
                     .position(
                         x: geometry.size.width / 2 + boxOffset.width,
                         y: geometry.size.height / 2 + boxOffset.height
                     )
                     .gesture(
+                        // Drag gesture - always available
                         DragGesture()
                             .onChanged { value in
-                                // Smooth drag: add translation to last offset
                                 boxOffset = CGSize(
                                     width: lastOffset.width + value.translation.width,
                                     height: lastOffset.height + value.translation.height
                                 )
                             }
                             .onEnded { _ in
-                                // Save the final offset for next drag
                                 lastOffset = boxOffset
 
-                                // Check if dragged enough (threshold: 30 points from center)
                                 let totalDrag = sqrt(pow(boxOffset.width, 2) + pow(boxOffset.height, 2))
-                                if totalDrag > 30 {
-                                    if !hasDragged {
-                                        hasDragged = true
-                                        withAnimation(.spring(response: 0.3)) {
-                                            showMessage = true
-                                        }
+                                if totalDrag > 30 && !hasDragged {
+                                    hasDragged = true
+                                }
+                            }
+                    )
+                    .simultaneousGesture(
+                        // Magnification gesture - only after drag is complete
+                        MagnificationGesture()
+                            .onChanged { value in
+                                if hasDragged && !hasPinched {
+                                    let delta = value / lastScale
+                                    lastScale = value
+                                    boxScale = max(0.5, min(delta * boxScale, 3.0))
+                                }
+                            }
+                            .onEnded { _ in
+                                // Check if magnified enough (threshold: 1.3x)
+                                if boxScale > 1.3 && !hasMagnified {
+                                    hasMagnified = true
+                                }
+                                lastScale = 1.0
+                            }
+                    )
+                    .simultaneousGesture(
+                        // Rotation gesture - only after magnification is complete
+                        RotationGesture()
+                            .onChanged { value in
+                                if hasMagnified && !hasPinched {
+                                    let rotationDelta = value.radians - lastRotationRadians
+                                    lastRotationRadians = value.radians
+                                    boxRotationRadians += rotationDelta
+                                }
+                            }
+                            .onEnded { _ in
+                                // Check if rotated enough (threshold: 30 degrees)
+                                let degrees = abs(boxRotationRadians * 180 / .pi)
+                                if degrees > 30 && !hasRotated {
+                                    hasRotated = true
+                                }
+                                lastRotationRadians = 0.0
+                            }
+                    )
+                    .simultaneousGesture(
+                        // Double tap to reset - available after magnification and rotation
+                        TapGesture(count: 2)
+                            .onEnded {
+                                if hasMagnified && hasRotated && !hasPinched {
+                                    // Reset the box
+                                    withAnimation(.spring()) {
+                                        boxScale = 1.0
+                                        boxRotationRadians = 0.0
+                                        boxOffset = .zero
+                                        lastOffset = .zero
+                                        lastScale = 1.0
+                                        lastRotationRadians = 0.0
+                                        hasPinched = true
                                     }
                                 }
                             }
@@ -229,29 +291,43 @@ struct TutorialDragPage: View {
             }
 
             VStack(spacing: 0) {
-                // Skip button at top right
-                HStack {
-                    Spacer()
-                    Button("Skip") {
-                        coordinator.goToFinalOnboarding()
+                // Skip button at top right - hidden when all gestures complete
+//                if !allGesturesComplete {
+                    HStack {
+                        Spacer()
+                        Button(allGesturesComplete ? "" : "Skip") {
+                            coordinator.goToFinalOnboarding()
+                        }
+                        .padding(.trailing, 20)
+                        .padding(.top, 60)
                     }
-                    .padding(.trailing, 20)
-                    .padding(.top, 60)
-                }
+//                }
 
                 Spacer().frame(height: 20)
 
-                // Mascot with speech bubble using new component
+                // Mascot with speech bubble - shows appropriate message based on progress
                 MascotWithSpeechView(
                     message: Binding(
-                        get: { showMessage ? "You have dragged successfully!" : "Drag the box to move" },
+                        get: {
+                            if allGesturesComplete {
+                                return "All gestures completed! Press Next to continue."
+                            } else if hasDragged && !hasMagnified {
+                                return "Great! Now pinch to magnify the box."
+                            } else if hasMagnified && !hasRotated {
+                                return "Perfect! Now rotate with two fingers."
+                            } else if hasRotated && !hasPinched {
+                                return "Excellent! Double tap to reset the box."
+                            } else {
+                                return "Drag the box to move it around."
+                            }
+                        },
                         set: { _ in }
                     )
                 )
 
                 Spacer()
 
-                // Next button at bottom right
+                // Next button at bottom right - enabled only when all gestures complete
                 HStack {
                     Spacer()
                     Button(action: {
@@ -259,7 +335,7 @@ struct TutorialDragPage: View {
                     }) {
                         ZStack {
                             Circle()
-                                .fill(hasDragged ? LinearGradient(
+                                .fill(allGesturesComplete ? LinearGradient(
                                     gradient: Gradient(colors: [Color.blue, Color.purple]),
                                     startPoint: .leading,
                                     endPoint: .trailing
@@ -276,7 +352,7 @@ struct TutorialDragPage: View {
                                 .foregroundColor(.white)
                         }
                     }
-                    .disabled(!hasDragged)
+                    .disabled(!allGesturesComplete)
                     .padding(.trailing, 20)
                     .padding(.bottom, 60)
                 }
