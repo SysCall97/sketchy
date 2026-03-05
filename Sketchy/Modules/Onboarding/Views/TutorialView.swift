@@ -22,13 +22,6 @@ struct MascotWithSpeechView: View {
         VStack(spacing: 0) {
             // Speech bubble with dynamic sizing
             ZStack {
-                RoundedRectangle(cornerRadius: 4)
-                    .fill(Color.white)
-                    .shadow(color: .black.opacity(0.1), radius: 4, x: 0, y: 2)
-                    .frame(width: 16, height: 16)
-                    .rotationEffect(.degrees(45))
-                    .offset(y: textSize.height - 4)
-                
                 // Background bubble
                 RoundedRectangle(cornerRadius: 16)
                     .fill(Color.white)
@@ -64,10 +57,27 @@ struct MascotWithSpeechView: View {
                 }
                 .padding(.horizontal, 12)
                 .padding(.vertical, 8)
-                
-                
             }
             .frame(width: textSize.width + 40, height: textSize.height + 20)
+            .overlay(
+                // Speech bubble tail at bottom center
+                Rectangle()
+                    .fill(Color.white)
+                    .frame(width: 16, height: 16)
+                    .rotationEffect(.degrees(45))
+                    .mask(
+                        // Mask to hide top half of the rotated square
+                        VStack(spacing: 0) {
+                            Color.clear
+                                .frame(height: 8)
+                            Color.white
+                                .frame(height: 8)
+                        }
+                    )
+                    .shadow(color: .black.opacity(0.1), radius: 4, x: 0, y: 2)
+                    .offset(y: 8),
+                alignment: .bottom
+            )
             .padding(.bottom, 8)
 
             // Mascot
