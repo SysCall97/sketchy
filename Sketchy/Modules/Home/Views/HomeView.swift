@@ -171,44 +171,7 @@ struct HomeView: View {
     }
 
     private var emptyFavoritesState: some View {
-        VStack(spacing: 20) {
-            Spacer()
-                .frame(height: 60)
-
-            ZStack {
-                Circle()
-                    .fill(Color.blue.opacity(0.1))
-                    .frame(width: 120, height: 120)
-
-                Image(.mascot2)
-                    .resizable()
-                    .scaledToFit()
-                    .frame(width: 120, height: 120)
-                    .rotationEffect(.degrees(isRotating ? 15 : 0))
-                    .animation(
-                        Animation.easeInOut(duration: 2.5)
-                            .repeatForever(autoreverses: true),
-                        value: isRotating
-                    )
-            }
-
-            VStack(spacing: 8) {
-                Text("No Favorites Yet")
-                    .font(.headline)
-                    .foregroundColor(.primary)
-
-                Text("Tap the star icon on any template to add it to your favorites")
-                    .font(.subheadline)
-                    .foregroundColor(.secondary)
-                    .multilineTextAlignment(.center)
-                    .padding(.horizontal, 40)
-            }
-
-            Spacer()
-        }
-        .onAppear {
-            isRotating = true
-        }
+        EmptyFavoritesView()
     }
 
     @State private var isRotating = false
@@ -442,6 +405,54 @@ struct HomeView: View {
     private func openAppSettings() {
         if let settingsUrl = URL(string: UIApplication.openSettingsURLString) {
             UIApplication.shared.open(settingsUrl)
+        }
+    }
+}
+
+/// Empty favorites state with rotating mascot
+private struct EmptyFavoritesView: View {
+    @State private var isRotating = false
+
+    var body: some View {
+        VStack(spacing: 20) {
+            Spacer()
+                .frame(height: 60)
+
+            ZStack {
+                Circle()
+                    .fill(Color.blue.opacity(0.1))
+                    .frame(width: 120, height: 120)
+
+                Image(.mascot2)
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 120, height: 120)
+                    .rotationEffect(.degrees(isRotating ? 15 : 0))
+                    .animation(
+                        Animation.easeInOut(duration: 2.5)
+                            .repeatForever(autoreverses: true),
+                        value: isRotating
+                    )
+            }
+
+            VStack(spacing: 8) {
+                Text("No Favorites Yet")
+                    .font(.headline)
+                    .foregroundColor(.primary)
+
+                Text("Tap the star icon on any template to add it to your favorites")
+                    .font(.subheadline)
+                    .foregroundColor(.secondary)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, 40)
+            }
+
+            Spacer()
+        }
+        .onAppear {
+            if !isRotating {
+                isRotating = true
+            }
         }
     }
 }

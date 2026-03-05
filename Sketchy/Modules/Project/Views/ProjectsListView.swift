@@ -82,46 +82,8 @@ struct ProjectsListView: View {
         }
     }
     
-    @State private var isRotatingNoProject = false
     private var emptyProjectsState: some View {
-        VStack(spacing: 20) {
-            Spacer()
-                .frame(height: 60)
-
-            ZStack {
-                Circle()
-                    .fill(Color.orange.opacity(0.1))
-                    .frame(width: 120, height: 120)
-
-                Image(.mascot2)
-                    .resizable()
-                    .scaledToFit()
-                    .frame(width: 120, height: 120)
-                    .rotationEffect(.degrees(isRotatingNoProject ? 15 : 0))
-                    .animation(
-                        Animation.easeInOut(duration: 2.5)
-                            .repeatForever(autoreverses: true),
-                        value: isRotatingNoProject
-                    )
-            }
-
-            VStack(spacing: 8) {
-                Text("No Projects Yet")
-                    .font(.headline)
-                    .foregroundColor(.primary)
-
-                Text("Save your drawings as projects to continue working on them later")
-                    .font(.subheadline)
-                    .foregroundColor(.secondary)
-                    .multilineTextAlignment(.center)
-                    .padding(.horizontal, 40)
-            }
-
-            Spacer()
-        }        
-        .onAppear {
-            isRotatingNoProject = true
-        }
+        EmptyProjectsView()
     }
 
     // MARK: - Helper Methods
@@ -186,6 +148,54 @@ struct ProjectsListView: View {
         ProjectManager.shared.deleteProject(project)
         projects.removeAll { $0.id == project.id }
         projectToDelete = nil
+    }
+}
+
+/// Empty projects state with rotating mascot
+private struct EmptyProjectsView: View {
+    @State private var isRotating = false
+
+    var body: some View {
+        VStack(spacing: 20) {
+            Spacer()
+                .frame(height: 60)
+
+            ZStack {
+                Circle()
+                    .fill(Color.orange.opacity(0.1))
+                    .frame(width: 120, height: 120)
+
+                Image(.mascot2)
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 120, height: 120)
+                    .rotationEffect(.degrees(isRotating ? 15 : 0))
+                    .animation(
+                        Animation.easeInOut(duration: 2.5)
+                            .repeatForever(autoreverses: true),
+                        value: isRotating
+                    )
+            }
+
+            VStack(spacing: 8) {
+                Text("No Projects Yet")
+                    .font(.headline)
+                    .foregroundColor(.primary)
+
+                Text("Save your drawings as projects to continue working on them later")
+                    .font(.subheadline)
+                    .foregroundColor(.secondary)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, 40)
+            }
+
+            Spacer()
+        }
+        .onAppear {
+            if !isRotating {
+                isRotating = true
+            }
+        }
     }
 }
 
