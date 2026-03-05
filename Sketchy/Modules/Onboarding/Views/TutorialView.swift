@@ -141,19 +141,10 @@ struct TutorialView: View {
     // MARK: - Body
     var body: some View {
         ZStack {
-            if currentPage == 0 {
                 TutorialDragPage(
                     coordinator: coordinator,
-                    isNextEnabled: bindingForPage(0),
-                    onNext: {
-                        withAnimation {
-                            currentPage = 1
-                        }
-                    }
+                    isNextEnabled: bindingForPage(0)
                 )
-            } else if currentPage == 1 {
-                TutorialBlankPage(coordinator: coordinator)
-            }
         }
         .navigationBarBackButtonHidden(true)
     }
@@ -173,7 +164,6 @@ struct TutorialDragPage: View {
     // MARK: - Dependencies
     @ObservedObject var coordinator: AppCoordinator
     @Binding var isNextEnabled: Bool
-    var onNext: () -> Void = {}
 
     // MARK: - State
     @State private var boxOffset = CGSize.zero
@@ -188,6 +178,8 @@ struct TutorialDragPage: View {
     @State private var hasMagnified = false
     @State private var hasRotated = false
     @State private var hasPinched = false
+    @State private var shouldFadeBox = false
+    @State private var shouldCenterMascot = false
 
     // Check if all gestures are complete
     private var allGesturesComplete: Bool {
@@ -215,6 +207,8 @@ struct TutorialDragPage: View {
                         x: geometry.size.width / 2 + boxOffset.width,
                         y: geometry.size.height / 2 + boxOffset.height
                     )
+                    .opacity(shouldFadeBox ? 0 : 1)
+                    .animation(.easeInOut(duration: 0.35), value: shouldFadeBox)
                     .gesture(
                         // Drag gesture - always available
                         DragGesture()
@@ -285,6 +279,20 @@ struct TutorialDragPage: View {
                                         lastRotationRadians = 0.0
                                         hasPinched = true
                                     }
+
+                                    // Wait 0.35s for reset to complete, then fade out box
+                                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
+                                        withAnimation(.easeInOut(duration: 0.35)) {
+                                            shouldFadeBox = true
+                                        }
+
+                                        // After fade completes (0.35s), animate mascot down
+                                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
+                                            withAnimation(.easeInOut(duration: 0.5)) {
+                                                shouldCenterMascot = true
+                                            }
+                                        }
+                                    }
                                 }
                             }
                     )
@@ -292,18 +300,21 @@ struct TutorialDragPage: View {
 
             VStack(spacing: 0) {
                 // Skip button at top right - hidden when all gestures complete
-//                if !allGesturesComplete {
-                    HStack {
-                        Spacer()
-                        Button(allGesturesComplete ? "" : "Skip") {
-                            coordinator.goToFinalOnboarding()
-                        }
-                        .padding(.trailing, 20)
-                        .padding(.top, 60)
+                HStack {
+                    Spacer()
+                    Button(allGesturesComplete ? "" : "Skip") {
+                        coordinator.goToFinalOnboarding()
                     }
-//                }
-
-                Spacer().frame(height: 20)
+                    .padding(.trailing, 20)
+                    .padding(.top, 60)
+                }
+                
+                if shouldCenterMascot {
+                    // Center mascot when gestures complete (after delay)
+                    Spacer()
+                } else {
+                    Spacer().frame(height: 20)
+                }
 
                 // Mascot with speech bubble - shows appropriate message based on progress
                 MascotWithSpeechView(
@@ -324,14 +335,19 @@ struct TutorialDragPage: View {
                         set: { _ in }
                     )
                 )
+                .animation(.easeInOut(duration: 0.5), value: shouldCenterMascot)
 
-                Spacer()
+                if shouldCenterMascot {
+                    Spacer()
+                } else {
+                    Spacer()
+                }
 
                 // Next button at bottom right - enabled only when all gestures complete
                 HStack {
                     Spacer()
                     Button(action: {
-                        onNext()
+                        coordinator.goToFinalOnboarding()
                     }) {
                         ZStack {
                             Circle()
