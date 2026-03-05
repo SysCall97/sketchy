@@ -42,6 +42,7 @@ struct PaywallView: View {
                     VStack(alignment: .leading, spacing: 12) {
                         BenefitRow(icon: "checkmark.circle.fill", title: "Unlimited drawings every day")
                         BenefitRow(icon: "checkmark.circle.fill", title: "Unlimited project savings every day")
+                        BenefitRow(icon: "checkmark.circle.fill", title: "This app will always be ad free")
                         BenefitRow(icon: "checkmark.circle.fill", title: "Support indie dev for future improvements")
                     }
                     .padding(.horizontal, 16)
