@@ -68,7 +68,6 @@ struct HomeView: View {
             }
         }
         .onAppear {
-            KeychainManager.shared.resetAll()
             firebaseManager.observeTemplates()
         }
         .onChange(of: firebaseManager.remoteTemplates) { remoteTemplates in
@@ -289,8 +288,8 @@ struct HomeView: View {
                         await requestPhotoLibraryPermission()
                     }
                 }) {
-                    Image(systemName: "plus")
-                        .font(.title.bold())
+                    Image(systemName: "photo.on.rectangle.angled")
+                        .font(.title3.bold())
                         .foregroundColor(.white)
                         .frame(width: 60, height: 60)
                         .background(Circle().fill(
