@@ -74,7 +74,8 @@ Sketchy/
 │   ├── Home/                          # Template selection screen
 │   │   ├── Views/
 │   │   │   ├── HomeView.swift
-│   │   │   └── PromoFloatingButton.swift  # 24h countdown button
+│   │   │   ├── PromoFloatingButton.swift  # 24h countdown button
+│   │   │   └── EmptyFavoritesView.swift   # Favorites empty state
 │   │   ├── Models/
 │   │   │   └── TemplateModel.swift
 │   │   └── Utils/
@@ -98,6 +99,13 @@ Sketchy/
 │   │   │   └── DrawingViewModel.swift
 │   │   └── Models/
 │   │       └── DrawingState.swift
+│   │
+│   ├── Project/                       # Project management
+│   │   ├── Views/
+│   │   │   ├── ProjectsListView.swift
+│   │   │   └── EmptyProjectsView.swift    # Projects empty state
+│   │   └── Models/
+│   │       └── ProjectModel.swift
 │   │
 │   ├── Camera/                        # Camera functionality
 │   │   ├── Services/
@@ -354,6 +362,63 @@ extension FeatureState: Equatable {
 }
 ```
 
+**Empty State Views:**
+```swift
+private struct EmptyStateView: View {
+    @State private var isAnimating = false
+
+    var body: some View {
+        VStack(spacing: 20) {
+            Spacer().frame(height: 60)
+
+            // Animated mascot with gentle rotation
+            ZStack {
+                Circle()
+                    .fill(Color.opacity(0.1))
+                    .frame(width: 120, height: 120)
+
+                Image(.mascot)
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 120, height: 120)
+                    .rotationEffect(.degrees(isAnimating ? 15 : 0))
+                    .animation(
+                        Animation.easeInOut(duration: 2.5)
+                            .repeatForever(autoreverses: true),
+                        value: isAnimating
+                    )
+            }
+
+            // Message
+            VStack(spacing: 8) {
+                Text("Title")
+                    .font(.headline)
+                    .foregroundColor(.primary)
+                Text("Description")
+                    .font(.subheadline)
+                    .foregroundColor(.secondary)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, 40)
+            }
+
+            Spacer()
+        }
+        .onAppear {
+            if !isAnimating {
+                isAnimating = true
+            }
+        }
+    }
+}
+```
+
+**Key Points:**
+- Use `@State private var isAnimating = false` to control animation
+- Initialize as `false`, set to `true` in `.onAppear` with guard condition
+- Use `.repeatForever(autoreverses: true)` for continuous animation
+- Keep animation duration slow (2.5s) for gentle effect
+- Extract into separate view component to preserve animation state across tab switches
+
 **Data Models:**
 ```swift
 struct DataModel: Identifiable, Equatable, Hashable {
@@ -524,6 +589,17 @@ struct FeatureView: View {
 - Use weak references to prevent retain cycles
 - Dispose of camera session when not needed
 
+**Image Display:**
+- Always add `.resizable()` before frame modifiers
+- Use `.scaledToFit()` to maintain aspect ratio
+- Set explicit frame constraints when needed
+```swift
+Image(.mascot)
+    .resizable()      // Required for frame modifiers
+    .scaledToFit()    // Maintain aspect ratio
+    .frame(width: 80, height: 80)
+```
+
 ---
 
 ## Common Patterns & Anti-Patterns
@@ -588,6 +664,15 @@ var body: some View {
     let result = complexCalculation()  // ❌ Move to ViewModel
     return Text("\(result)")
 }
+```
+
+**Keychain & Persistence:**
+```swift
+// Bad - Resetting keychain in production code
+.onAppear {
+    KeychainManager.shared.resetAll()  // ❌ Clears all user data!
+}
+// Only use resetAll() for testing/debugging, never in production
 ```
 
 ---
@@ -702,7 +787,7 @@ keychainManager.shouldShowPromoButton()  // Checks if < 24 hours elapsed
 
 ---
 
-*Last Updated: February 2026*
+*Last Updated: March 2026*
 *Version: 1.0*
 *Architecture: MVVM + Coordinator*
 *Minimum iOS: 16.0*

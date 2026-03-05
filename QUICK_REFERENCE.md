@@ -278,6 +278,54 @@ VStack(alignment: .leading, spacing: 8) {
 }
 ```
 
+### Empty State View Pattern
+```swift
+private struct EmptyStateView: View {
+    @State private var isAnimating = false
+
+    var body: some View {
+        VStack(spacing: 20) {
+            Spacer().frame(height: 60)
+
+            // Animated mascot
+            ZStack {
+                Circle()
+                    .fill(Color.opacity(0.1))
+                    .frame(width: 120, height: 120)
+
+                Image(.mascot)
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 120, height: 120)
+                    .rotationEffect(.degrees(isAnimating ? 15 : 0))
+                    .animation(
+                        Animation.easeInOut(duration: 2.5)
+                            .repeatForever(autoreverses: true),
+                        value: isAnimating
+                    )
+            }
+
+            // Message text
+            VStack(spacing: 8) {
+                Text("Title")
+                    .font(.headline)
+                Text("Description")
+                    .font(.subheadline)
+                    .foregroundColor(.secondary)
+                    .multilineTextAlignment(.center)
+            }
+
+            Spacer()
+        }
+        .onAppear {
+            if !isAnimating {
+                isAnimating = true
+            }
+        }
+    }
+}
+```
+
 ---
 
 ## Transform System
@@ -354,6 +402,15 @@ Modules/NewFeature/
 ```
 
 ## Recent Additions
+
+### Empty State Views
+```
+Modules/Home/Views/
+└── EmptyFavoritesView.swift         # Favorites tab empty state
+
+Modules/Project/Views/
+└── EmptyProjectsView.swift          # Projects tab empty state
+```
 
 ### Promotional Button
 ```
@@ -455,6 +512,22 @@ subscriptionManager.$isSubscribed
 2. Call `cameraService.startSession()`
 3. Verify mode is `.abovePaper`
 
+### Issue: Image not fitting in frame
+**Fix:**
+Always add `.resizable()` before `.scaledToFit()` or frame modifiers
+```swift
+Image(.mascot)
+    .resizable()          // Required first
+    .scaledToFit()
+    .frame(width: 80, height: 80)
+```
+
+### Issue: Favorites not persisting after app restart
+**Fix:**
+- Remove `KeychainManager.shared.resetAll()` from production code
+- This method clears all keychain data and is for testing only
+- Favorites are stored in Keychain and persist automatically if not reset
+
 ---
 
 ## Git Commit Message Style
@@ -472,4 +545,4 @@ chore: update dependencies
 
 ---
 
-*Last Updated: February 2026*
+*Last Updated: March 2026*
