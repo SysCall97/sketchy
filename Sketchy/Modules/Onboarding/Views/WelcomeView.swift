@@ -7,12 +7,25 @@
 
 import SwiftUI
 
+// MARK: - Welcome View
+
 struct WelcomeView: View {
+    // MARK: - Dependencies
+    @ObservedObject var coordinator: AppCoordinator
+
+    // MARK: - Body
     var body: some View {
-        Text("Hello, World!")
+        VStack {
+            Button("Go to Tutorial") {
+                coordinator.goToTutorial()
+            }
+        }
+        .navigationBarBackButtonHidden(true)
     }
 }
 
+// MARK: - Preview
+
 #Preview {
-    WelcomeView()
+    WelcomeView(coordinator: AppCoordinator())
 }

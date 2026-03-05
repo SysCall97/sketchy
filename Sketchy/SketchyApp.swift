@@ -52,6 +52,12 @@ struct RootView: View {
                         ColorbookView(coordinator: coordinator)
                     case .colorbookDrawing(let coloringPage):
                         ColorBookDrawingView(coordinator: coordinator, coloringPage: coloringPage)
+                    case .welcome:
+                        WelcomeView(coordinator: coordinator)
+                    case .tutorial:
+                        TutorialView(coordinator: coordinator)
+                    case .finalOnboarding:
+                        FinalOnboardingView(coordinator: coordinator)
                     }
                 }
         }

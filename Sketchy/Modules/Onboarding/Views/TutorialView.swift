@@ -7,12 +7,25 @@
 
 import SwiftUI
 
+// MARK: - Tutorial View
+
 struct TutorialView: View {
+    // MARK: - Dependencies
+    @ObservedObject var coordinator: AppCoordinator
+
+    // MARK: - Body
     var body: some View {
-        Text("Hello, World!")
+        VStack {
+            Button("Skip") {
+                coordinator.goToFinalOnboarding()
+            }
+        }
+        .navigationBarBackButtonHidden(true)
     }
 }
 
+// MARK: - Preview
+
 #Preview {
-    TutorialView()
+    TutorialView(coordinator: AppCoordinator())
 }

@@ -7,12 +7,25 @@
 
 import SwiftUI
 
+// MARK: - Final Onboarding View
+
 struct FinalOnboardingView: View {
+    // MARK: - Dependencies
+    @ObservedObject var coordinator: AppCoordinator
+
+    // MARK: - Body
     var body: some View {
-        Text("Hello, World!")
+        VStack {
+            Button("Complete Onboarding") {
+                coordinator.completeOnboarding()
+            }
+        }
+        .navigationBarBackButtonHidden(true)
     }
 }
 
+// MARK: - Preview
+
 #Preview {
-    FinalOnboardingView()
+    FinalOnboardingView(coordinator: AppCoordinator())
 }

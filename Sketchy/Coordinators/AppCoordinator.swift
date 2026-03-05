@@ -16,12 +16,15 @@ class AppCoordinator: Coordinatable {
     // MARK: - Services
 
     let subscriptionManager = SubscriptionManager()
+    let onboardingManager = OnboardingManager.shared
 
     var rootView: AnyView {
         AnyView(
             Group {
                 if showSplash {
                     SplashView(coordinator: self)
+                } else if !onboardingManager.hasCompletedOnboarding() {
+                    WelcomeView(coordinator: self)
                 } else {
                     HomeView(coordinator: self)
                 }
@@ -36,17 +39,18 @@ class AppCoordinator: Coordinatable {
         navigationPath.append(route)
     }
 
-    /// Navigate to home screen
-    func goToHome() {
-        navigationPath.removeLast(navigationPath.count)
-    }
-
-    /// Complete splash screen and navigate to home
+    /// Complete splash screen and navigate to appropriate screen
     func completeSplash() {
-        // Push home view with navigation animation
-        navigate(to: .home)
+        // Check if onboarding is completed
+        if onboardingManager.hasCompletedOnboarding() {
+            // Push home view with navigation animation
+            navigate(to: .home)
+        } else {
+            // Push welcome view with navigation animation
+            navigate(to: .welcome)
+        }
 
-        // After push completes, clear path and switch root to home
+        // After push completes, clear path and switch root
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
             self.navigationPath = NavigationPath()
             self.showSplash = false
@@ -88,6 +92,37 @@ class AppCoordinator: Coordinatable {
     /// Navigate to colorbook drawing screen with a coloring page
     func goToColorbookDrawing(with coloringPage: TemplateModel) {
         navigate(to: .colorbookDrawing(coloringPage: coloringPage))
+    }
+
+    // MARK: - Onboarding Navigation
+
+    /// Navigate to welcome screen
+    func goToWelcome() {
+        navigate(to: .welcome)
+    }
+
+    /// Navigate to tutorial screen
+    func goToTutorial() {
+        navigate(to: .tutorial)
+    }
+
+    /// Navigate to final onboarding screen
+    func goToFinalOnboarding() {
+        navigate(to: .finalOnboarding)
+    }
+
+    /// Complete onboarding and navigate to home
+    func completeOnboarding() {
+        // Mark onboarding as complete first
+        onboardingManager.markOnboardingCompleted()
+
+        // Push home view with navigation animation (right to left)
+        navigate(to: .home)
+
+        // After push completes, clear path so root view shows HomeView
+//        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+//            self.navigationPath = NavigationPath()
+//        }
     }
 
     /// Go back to previous screen

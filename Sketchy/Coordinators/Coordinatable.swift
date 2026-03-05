@@ -17,4 +17,7 @@ enum CoordinatorRoute: Hashable {
     case templateGallery
     case colorbook
     case colorbookDrawing(coloringPage: TemplateModel)
+    case welcome
+    case tutorial
+    case finalOnboarding
 }
