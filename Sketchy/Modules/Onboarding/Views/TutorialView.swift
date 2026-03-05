@@ -140,16 +140,21 @@ struct TutorialView: View {
 
     // MARK: - Body
     var body: some View {
-        TabView(selection: $currentPage) {
-            // Page 1: Drag Gesture Tutorial
-            TutorialDragPage(coordinator: coordinator, isNextEnabled: bindingForPage(0))
-                .tag(0)
-
-            // Page 2: Blank (for future gesture tutorial)
-            TutorialBlankPage(coordinator: coordinator)
-                .tag(1)
+        ZStack {
+            if currentPage == 0 {
+                TutorialDragPage(
+                    coordinator: coordinator,
+                    isNextEnabled: bindingForPage(0),
+                    onNext: {
+                        withAnimation {
+                            currentPage = 1
+                        }
+                    }
+                )
+            } else if currentPage == 1 {
+                TutorialBlankPage(coordinator: coordinator)
+            }
         }
-        .tabViewStyle(.page(indexDisplayMode: .never))
         .navigationBarBackButtonHidden(true)
     }
 
@@ -168,6 +173,7 @@ struct TutorialDragPage: View {
     // MARK: - Dependencies
     @ObservedObject var coordinator: AppCoordinator
     @Binding var isNextEnabled: Bool
+    var onNext: () -> Void = {}
 
     // MARK: - State
     @State private var boxOffset = CGSize.zero
@@ -230,10 +236,10 @@ struct TutorialDragPage: View {
                         coordinator.goToFinalOnboarding()
                     }
                     .padding(.trailing, 20)
-                    .padding(.top, 16)
+                    .padding(.top, 60)
                 }
 
-                Spacer().frame(height: 50)
+                Spacer().frame(height: 20)
 
                 // Mascot with speech bubble using new component
                 MascotWithSpeechView(
@@ -242,7 +248,6 @@ struct TutorialDragPage: View {
                         set: { _ in }
                     )
                 )
-                .padding(.bottom, 40)
 
                 Spacer()
 
@@ -250,7 +255,7 @@ struct TutorialDragPage: View {
                 HStack {
                     Spacer()
                     Button(action: {
-                        // Navigate to next page (will be handled by parent)
+                        onNext()
                     }) {
                         ZStack {
                             Circle()
@@ -273,7 +278,7 @@ struct TutorialDragPage: View {
                     }
                     .disabled(!hasDragged)
                     .padding(.trailing, 20)
-                    .padding(.bottom, 20)
+                    .padding(.bottom, 60)
                 }
             }
         }
