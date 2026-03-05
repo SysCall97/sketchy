@@ -41,8 +41,10 @@ struct OfferPaywallView: View {
                 VStack(spacing: 16) {
                     // MARK: - App Icon & Name (same as main paywall)
                     VStack(spacing: 6) {
-                        Image(systemName: "pencil.and.outline")
-                            .font(.system(size: 45))
+                        Image(.mascot1)
+                            .resizable()
+                            .scaledToFit()
+                            .frame(width: 80, height: 80)
                             .foregroundColor(.blue)
 
                         Text("Sketchy")

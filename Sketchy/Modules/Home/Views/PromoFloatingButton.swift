@@ -50,37 +50,37 @@ struct PromoFloatingButton: View {
             Button(action: {
                 isPaywallPresented = true
             }) {
-                VStack(spacing: 4) {
+                VStack(spacing: 0) {
                     // Animated icon container
                     ZStack {
                         // Cat card (bottom layer) - smaller scale from animation
-                        Image("cat_card")
+                        Image("mascot_1")
                             .resizable()
                             .scaledToFit()
                             .frame(width: 45, height: 45)
                             .shadow(radius: 2)
 
                         // Pencil (top layer) - with angle and offset from animation, smaller scale
-                        Image("pencil")
-                            .resizable()
-                            .scaledToFit()
-                            .frame(width: 25, height: 25)
-                            .rotationEffect(.degrees(10))
-                            .offset(x: 12, y: 0)
-                            .shadow(radius: 1)
+//                        Image("pencil")
+//                            .resizable()
+//                            .scaledToFit()
+//                            .frame(width: 25, height: 25)
+//                            .rotationEffect(.degrees(10))
+//                            .offset(x: 12, y: 0)
+//                            .shadow(radius: 1)
                     }
                     .frame(width: 60, height: 60)
-                    .background(
-                        Circle()
-                            .fill(
-                                LinearGradient(
-                                    gradient: Gradient(colors: [Color.blue.opacity(0.85), Color.purple.opacity(0.85)]),
-                                    startPoint: .topLeading,
-                                    endPoint: .bottomTrailing
-                                )
-                            )
-                            .shadow(color: Color.blue.opacity(0.4), radius: 10, x: 0, y: 5)
-                    )
+//                    .background(
+//                        Circle()
+//                            .fill(
+//                                LinearGradient(
+//                                    gradient: Gradient(colors: [Color.blue.opacity(0.85), Color.purple.opacity(0.85)]),
+//                                    startPoint: .topLeading,
+//                                    endPoint: .bottomTrailing
+//                                )
+//                            )
+//                            .shadow(color: Color.blue.opacity(0.4), radius: 10, x: 0, y: 5)
+//                    )
                     .scaleEffect(isAnimating ? 1.08 : 1.0)
                     .offset(y: floatOffset)
 

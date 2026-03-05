@@ -68,6 +68,7 @@ struct HomeView: View {
             }
         }
         .onAppear {
+            KeychainManager.shared.resetAll()
             firebaseManager.observeTemplates()
         }
         .onChange(of: firebaseManager.remoteTemplates) { remoteTemplates in

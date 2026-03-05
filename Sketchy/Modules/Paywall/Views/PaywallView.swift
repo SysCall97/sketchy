@@ -12,8 +12,10 @@ struct PaywallView: View {
                 VStack(spacing: 20) {
                     // App Icon & Name
                     VStack(spacing: 8) {
-                        Image(systemName: "pencil.and.outline")
-                            .font(.system(size: 50))
+                        Image(.mascot1)
+                            .resizable()
+                            .scaledToFit()
+                            .frame(width: 80, height: 80)
                             .foregroundColor(.blue)
 
                         Text("Sketchy")
