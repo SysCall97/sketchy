@@ -16,7 +16,7 @@ struct PaywallView: View {
                             .resizable()
                             .scaledToFit()
                             .frame(width: 80, height: 80)
-                            .foregroundColor(.blue)
+                            .shadow(radius: 4)
 
                         Text("Sketchy")
                             .font(.title2)

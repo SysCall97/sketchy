@@ -180,12 +180,13 @@ struct HomeView: View {
                     .fill(Color.blue.opacity(0.1))
                     .frame(width: 120, height: 120)
 
-                Image(systemName: "star")
-                    .font(.system(size: 50))
-                    .foregroundColor(.blue)
+                Image(.mascot2)
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 120, height: 120)
                     .rotationEffect(.degrees(isRotating ? 15 : 0))
                     .animation(
-                        Animation.easeInOut(duration: 1.5)
+                        Animation.easeInOut(duration: 2.5)
                             .repeatForever(autoreverses: true),
                         value: isRotating
                     )

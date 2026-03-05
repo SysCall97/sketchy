@@ -81,7 +81,8 @@ struct ProjectsListView: View {
             Text("Are you sure you want to delete this project?")
         }
     }
-
+    
+    @State private var isRotatingNoProject = false
     private var emptyProjectsState: some View {
         VStack(spacing: 20) {
             Spacer()
@@ -92,9 +93,16 @@ struct ProjectsListView: View {
                     .fill(Color.orange.opacity(0.1))
                     .frame(width: 120, height: 120)
 
-                Image(systemName: "folder.badge.plus")
-                    .font(.system(size: 50))
-                    .foregroundColor(.orange)
+                Image(.mascot2)
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 120, height: 120)
+                    .rotationEffect(.degrees(isRotatingNoProject ? 15 : 0))
+                    .animation(
+                        Animation.easeInOut(duration: 2.5)
+                            .repeatForever(autoreverses: true),
+                        value: isRotatingNoProject
+                    )
             }
 
             VStack(spacing: 8) {
@@ -110,6 +118,9 @@ struct ProjectsListView: View {
             }
 
             Spacer()
+        }        
+        .onAppear {
+            isRotatingNoProject = true
         }
     }
 
