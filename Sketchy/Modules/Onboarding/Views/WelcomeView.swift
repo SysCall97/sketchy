@@ -13,14 +13,70 @@ struct WelcomeView: View {
     // MARK: - Dependencies
     @ObservedObject var coordinator: AppCoordinator
 
+    // MARK: - State
+    @State private var quote: Quote?
+
     // MARK: - Body
     var body: some View {
-        VStack {
-            Button("Go to Tutorial") {
-                coordinator.goToTutorial()
+        VStack(spacing: 0) {
+            Spacer()
+
+            // App Icon
+            Image(.appIcon)
+                .resizable()
+                .scaledToFit()
+                .frame(width: 150, height: 150)
+                .clipShape(RoundedCorner(radius: 25))
+
+            Spacer()
+                .frame(height: 60)
+
+            // Quote Section
+            if let quote = quote {
+                VStack(spacing: 12) {
+                    // Quote with quotation marks, bold and italic
+                    Text("\"\(quote.quote)\"")
+                        .font(.system(.title3, design: .monospaced))
+                        .fontWeight(.bold)
+                        .italic()
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal, 32)
+
+                    // Author name in gray
+                    Text("— \(quote.author)")
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                }
             }
+
+            Spacer()
+
+            // Get Started Button
+            Button(action: {
+                coordinator.goToTutorial()
+            }) {
+                Text("Get Started")
+                    .fontWeight(.semibold)
+                    .foregroundColor(.white)
+                    .frame(maxWidth: .infinity)
+                    .padding()
+                    .background(
+                        LinearGradient(
+                            gradient: Gradient(colors: [Color.blue, Color.purple]),
+                            startPoint: .leading,
+                            endPoint: .trailing
+                        )
+                    )
+                    .cornerRadius(12)
+            }
+            .padding(.horizontal, 32)
+            .padding(.bottom, 40)
         }
         .navigationBarBackButtonHidden(true)
+        .onAppear {
+            // Load random quote on appear
+            quote = QuoteManager.shared.getRandomQuote()
+        }
     }
 }
 
@@ -29,3 +85,4 @@ struct WelcomeView: View {
 #Preview {
     WelcomeView(coordinator: AppCoordinator())
 }
+
