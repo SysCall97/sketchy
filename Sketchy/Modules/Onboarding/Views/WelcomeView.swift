@@ -14,7 +14,15 @@ struct WelcomeView: View {
     @ObservedObject var coordinator: AppCoordinator
 
     // MARK: - State
+    // Quote is pre-selected when app launches, not when view appears
     @State private var quote: Quote?
+
+    // MARK: - Initializer
+    init(coordinator: AppCoordinator) {
+        self.coordinator = coordinator
+        // Use pre-selected quote from app launch
+        self._quote = State(initialValue: QuoteManager.shared.getRandomQuote())
+    }
 
     // MARK: - Body
     var body: some View {
@@ -73,10 +81,6 @@ struct WelcomeView: View {
             .padding(.bottom, 40)
         }
         .navigationBarBackButtonHidden(true)
-        .onAppear {
-            // Load random quote on appear
-            quote = QuoteManager.shared.getRandomQuote()
-        }
     }
 }
 
