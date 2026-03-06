@@ -234,6 +234,7 @@ struct TutorialDragPage: View {
                                 let totalDrag = sqrt(pow(boxOffset.width, 2) + pow(boxOffset.height, 2))
                                 if totalDrag > 30 && !hasDragged {
                                     hasDragged = true
+                                    HapticGenerator.triggerImpactHaptic(style: .light)
                                 }
                             }
                     )
@@ -251,6 +252,7 @@ struct TutorialDragPage: View {
                                 // Check if magnified enough (threshold: 1.3x)
                                 if boxScale > 1.3 && !hasMagnified {
                                     hasMagnified = true
+                                    HapticGenerator.triggerImpactHaptic(style: .medium)
                                 }
                                 lastScale = 1.0
                             }
@@ -270,6 +272,7 @@ struct TutorialDragPage: View {
                                 let degrees = abs(boxRotationRadians * 180 / .pi)
                                 if degrees > 30 && !hasRotated {
                                     hasRotated = true
+                                    HapticGenerator.triggerImpactHaptic(style: .heavy)
                                 }
                                 lastRotationRadians = 0.0
                             }
@@ -289,6 +292,8 @@ struct TutorialDragPage: View {
                                         lastRotationRadians = 0.0
                                         hasPinched = true
                                     }
+
+                                    HapticGenerator.triggerNotificationHaptic(type: .success)
 
                                     // Wait 0.35s for reset to complete, then fade out box
                                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
