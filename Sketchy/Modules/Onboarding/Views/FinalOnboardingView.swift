@@ -58,6 +58,7 @@ struct FinalOnboardingView: View {
 
             // Bottom Section - Primary Button
             Button(action: {
+                HapticGenerator.triggerImpactHaptic(style: .light)
                 coordinator.completeOnboarding()
             }) {
                 Text("Start Drawing")

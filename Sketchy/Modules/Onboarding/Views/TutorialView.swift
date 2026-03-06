@@ -362,6 +362,7 @@ struct TutorialDragPage: View {
                 HStack {
                     Spacer()
                     Button(action: {
+                        HapticGenerator.triggerImpactHaptic(style: .light)
                         coordinator.goToFinalOnboarding()
                     }) {
                         ZStack {

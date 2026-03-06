@@ -46,9 +46,8 @@ struct HomeView: View {
         ZStack {
             scrollViewContent
             floatingDailyLimitIndicator
-//            floatingImportButton
             bottomTabBar
-            floatingPromoButton  // Moved to top so it's not covered
+            floatingPromoButton
         }
         .background(Color(.systemGray6))
         .navigationTitle("Sketchy")
@@ -210,38 +209,6 @@ struct HomeView: View {
             }
         }
     }
-
-    private var floatingImportButton: some View {
-        VStack {
-            Spacer()
-
-            Button(action: {
-                Task {
-                    await requestPhotoLibraryPermission()
-                }
-            }) {
-                HStack {
-                    Image(systemName: "photo.on.rectangle.angled")
-                    Text("Import your illustration")
-                }
-                .font(.headline)
-                .foregroundColor(.white)
-                .frame(maxWidth: .infinity)
-                .padding()
-                .background(
-                    LinearGradient(
-                        gradient: Gradient(colors: [Color.blue, Color.purple]),
-                        startPoint: .leading,
-                        endPoint: .trailing
-                    )
-                )
-                .cornerRadius(12)
-                .shadow(radius: 4)
-            }
-            .padding(.horizontal)
-            .padding(.bottom, 60)
-        }
-    }
     
     private var bottomTabBar: some View {
         VStack {
@@ -284,6 +251,7 @@ struct HomeView: View {
                 .padding(.top, 12)
                 
                 Button(action: {
+                    HapticGenerator.triggerImpactHaptic(style: .light)
                     Task {
                         await requestPhotoLibraryPermission()
                     }

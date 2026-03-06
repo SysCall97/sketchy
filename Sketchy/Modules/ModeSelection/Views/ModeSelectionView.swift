@@ -76,13 +76,14 @@ struct ModeSelectionView: View {
 
                 // Continue button
                 Button(action: {
+                    HapticGenerator.triggerImpactHaptic(style: .light)
                     let selectedMode = viewModel.confirmSelection()
                     handleContinue(with: selectedMode)
                 }) {
                     HStack {
                         Text("Continue")
                             .fontWeight(.semibold)
-                        Image(systemName: "arrow.right")
+//                        Image(systemName: "arrow.right")
                     }
                     .font(.headline)
                     .foregroundColor(.white)

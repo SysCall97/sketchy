@@ -61,6 +61,7 @@ struct WelcomeView: View {
 
             // Get Started Button
             Button(action: {
+                HapticGenerator.triggerImpactHaptic(style: .light)
                 coordinator.goToTutorial()
             }) {
                 Text("Get Started")
